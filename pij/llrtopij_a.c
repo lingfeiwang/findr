@@ -125,7 +125,7 @@ int pij_llrtopij_a_convert_single(const MATRIXF* d,const MATRIXF* dconv,MATRIXF*
 	{
 		FTYPE		dmin,dmax;
 		MATRIXFF(minmax)(d,&dmin,&dmax);
-		if(!(dmin>=0))
+		if((!(dmin>=0))||gsl_isnan(dmax)||gsl_isinf(dmax))
 			ERRRET("Negative or NAN found in input data. It may invalidate follow up analysis. This may be due to incorrect previous steps.")
 		h=pij_llrtopij_a_nullhist_single((double)dmax,d->size2,n1,n2);
 		if(!h)
