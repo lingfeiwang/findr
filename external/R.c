@@ -96,9 +96,9 @@ void external_R_pijs_gassist_any(const int *ng,const int *nt,const int *ns,const
 			p1[i]=(double)VECTORFF(get)(vp1,i);
 			for(j=0;j<ntv;j++)
 			{
-				p2b[i*ngv+j]=(double)MATRIXFF(get)(mp2b,j,i);
-				p2c[i*ngv+j]=(double)MATRIXFF(get)(mp2c,j,i);
-				p3[i*ngv+j]=(double)MATRIXFF(get)(mp3,j,i);
+				p2b[j*ngv+i]=(double)MATRIXFF(get)(mp2b,i,j);
+				p2c[j*ngv+i]=(double)MATRIXFF(get)(mp2c,i,j);
+				p3[j*ngv+i]=(double)MATRIXFF(get)(mp3,i,j);
 			}
 		}
 	}
@@ -153,7 +153,7 @@ void external_R_pij_rank_a(const int *ng,const int *nt,const int *ns,const doubl
 	if(!*ret)
 		for(i=0;i<ngv;i++)
 			for(j=0;j<ntv;j++)
-				p[i*ngv+j]=(double)MATRIXFF(get)(mp,j,i);
+				p[j*ngv+i]=(double)MATRIXFF(get)(mp,i,j);
 	CLEANUP
 #undef CLEANUP
 }
