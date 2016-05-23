@@ -10,6 +10,8 @@ URL_BIN="https://github.com/lingfeiwang/findr-bin"
 URL_PYTHON="https://github.com/lingfeiwang/findr-python"
 URL_R="https://github.com/lingfeiwang/findr-R"
 URL_DOC="https://github.com/lingfeiwang/findr/blob/master/doc.pdf"
+URL_LIB_REL="$(URL_LIB)/releases"
+URL_BIN_REL="$(URL_BIN)/releases"
 VERSION1=0
 VERSION2=1
 VERSION3=0
@@ -39,6 +41,9 @@ DIR_INSTALL_LIB=$(DIR_INSTALL_PREFIX)/lib
 DIR_INSTALL_INC=$(DIR_INSTALL_PREFIX)/include/$(LIB_NAME)
 
 CC=gcc
+F90C=gfortran
+F90FLAGS=-fPIC -fdefault-real-8 -ffixed-form
+#-O3
 LD=gcc
 #INSTALL=install
 OPTFLAGS=-O3 -DNDEBUG=1 -DGSL_RANGE_CHECK_OFF=1 -DHAVE_INLINE=1
@@ -46,10 +51,13 @@ OPTFLAGS=-O3 -DNDEBUG=1 -DGSL_RANGE_CHECK_OFF=1 -DHAVE_INLINE=1
 LIB_CONFIG=base/config_auto.h
 LIB_C=$(wildcard $(DIR_SRC)/*/*.c) $(wildcard $(DIR_SRC)/*/*/*.c)
 LIB_C_B=$(basename $(LIB_C))
+LIB_F90=$(wildcard $(DIR_SRC)/*/*.f90) $(wildcard $(DIR_SRC)/*/*/*.f90)
+LIB_F90_B=$(basename $(LIB_F90))
 LIB_H=$(wildcard $(DIR_SRC)/*/*.h) $(wildcard $(DIR_SRC)/*/*/*.h) $(LIB_CONFIG)
 LIB_H_B=$(basename $(LIB_H))
-LIB_O_B=$(LIB_C_B)
-LIB_O=$(addsuffix .o,$(LIB_O_B))
+LIB_O_C=$(addsuffix .o,$(LIB_C_B))
+LIB_O_F90=$(addsuffix .o,$(LIB_F90_B))
+LIB_O=$(LIB_O_C) $(LIB_O_F90)
 LIB_PRODUCT=$(LIB_O)
 LIB_DPRODUCT=$(DIR_BUILD)/$(LIB_FNAME)
 INC_DPRODUCT=$(LIB_CONFIG)
@@ -61,6 +69,9 @@ INC_UNINSTALL=$(DIR_INSTALL_INC)
 .PHONY: all clean distclean install-lib install-inc install uninstall
 
 all: $(LIB_DPRODUCT)
+
+t:
+	echo $(LIB_O)
 
 $(LIB_CONFIG):
 	@echo "#ifndef _HEADER_LIB_CONFIG_AUTO_H_" > $@
@@ -79,7 +90,10 @@ $(LIB_CONFIG):
 $(DIR_BUILD):
 	mkdir -p $@
 
-$(LIB_PRODUCT): $(LIB_CONFIG)
+$(LIB_O_C): $(LIB_CONFIG)
+
+$(LIB_O_F90):
+	$(F90C) -o $@ -c $(F90FLAGS) $(addsuffix .f90,$(basename $@))
 
 $(LIB_DPRODUCT): $(LIB_PRODUCT) $(DIR_BUILD)
 	$(LD) -o $@ $(LIB_PRODUCT) $(LDFLAGS)
@@ -130,7 +144,7 @@ Makefile.flags:
 	gver=$$($(CC) --version | grep -o gcc) ; \
 	if ! [ -n "$$gver" ]; then echo "Invalid GCC version. Please download the latest GCC."; exit 1; fi
 	# Testing test method
-	cflags="$(CFLAGS) $(CFLAGS_EXTRA) -I$(PREFIX)/include -I/usr/local/include -I/usr/include -fopenmp -ggdb -fPIC -Wall -Wextra -Wconversion -Wsign-conversion -Wundef -Wendif-labels -std=gnu99 -pedantic-errors $(OPTFLAGS)"; \
+	cflags="$(CFLAGS) $(CFLAGS_EXTRA) -I$(PREFIX)/include -I/usr/local/include -fopenmp -ggdb -fPIC -Wall -Wextra -Wconversion -Wsign-conversion -Wundef -Wendif-labels -std=gnu99 -pedantic-errors $(OPTFLAGS)"; \
 	ldflags="$(LDFLAGS) -L$(PREFIX)/lib -L/usr/local/lib -L/usr/lib -fopenmp -lc -lm -shared"; \
 	$(LD) $$ldflags -lc --shared -o $(TMP_FILE) &> /dev/null || \
 	( echo "Linking with default flags failed."; exit 1; ) ; \
