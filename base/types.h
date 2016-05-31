@@ -23,6 +23,8 @@
 #include <float.h>
 #include "gsl/vector.h"
 #include "gsl/matrix.h"
+#include "gsl/blas.h"
+
 
 #if FTYPEBITS == 32
 	// Type definition
@@ -30,13 +32,13 @@
 	// Type suffix definition, for gsl vector and matrix functions
 	#define	FTYPE_SUF	_float
 	// BLAS function macro
-	#define BLASF(X)	gsl_blas_s ## X
+	#define BLASF(X)	BLASFO(X)
 	// Minimal value
 	#define FTYPE_MIN	FLT_MIN
 #elif FTYPEBITS == 64
 	#define FTYPE	double
 	#define	FTYPE_SUF	
-	#define BLASF(X)	gsl_blas_d ## X
+	#define BLASF(X)	BLASFD(X)
 	#define FTYPE_MIN	DBL_MIN
 #else
 	#error Unknown float type bit count.
@@ -47,11 +49,15 @@
 #else
 	#error Unknown genotype type bit count.
 #endif
+#define BLASFO(X)	gsl_blas_s ## X
+#define BLASFD(X)	gsl_blas_d ## X
 
 #define CONCATENATE2_(X,Y)		X ## Y
 #define CONCATENATE2(X,Y)		CONCATENATE2_(X,Y)
 #define CONCATENATE3_(X,Y,Z)	X ## Y ## Z
 #define CONCATENATE3(X,Y,Z)		CONCATENATE3_(X,Y,Z)
+#define CONCATENATE4_(X,Y,Z,W)	X ## Y ## Z ## W
+#define CONCATENATE4(X,Y,Z,W)	CONCATENATE4_(X,Y,Z,W)
 
 // vector type macro
 #define VECTORO		gsl_vector_float

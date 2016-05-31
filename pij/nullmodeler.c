@@ -75,7 +75,7 @@ void pij_nullmodeler_exp_close_container(void* c)
 void* pij_nullmodeler_exp_init(const void* c,const void* d,size_t n1,size_t n2)
 {
 	struct pij_nullmodeler_exp_state* p;
-	p=malloc(sizeof(struct pij_nullmodeler_exp_state));
+	MALLOCSIZE(p,1);
 	if(!p)
 		return 0;
 	p->n=0;
@@ -114,7 +114,7 @@ void* pij_nullmodeler_naive_init_container(const void* d,const void* pm,const gs
 {
 #define	CLEANUP	if(p){CLEANHIST(p->h)free(p);p=0;}
 	struct pij_nullmodeler_naive_state *p;
-	p=calloc(1,sizeof(struct pij_nullmodeler_naive_state));
+	CALLOCSIZE(p,1);
 	if(!p)
 		ERRRETV(0,"Not enough memory.")
 	p->h=gsl_histogram_alloc(h->n);
@@ -131,7 +131,7 @@ int pij_nullmodeler_naive_output(const void* c,gsl_histogram* h)
 	const struct pij_nullmodeler_naive_state* p=c;
 	VECTORDF(view)	vv=VECTORDF(view_array)(h->bin,h->n);
 	
-	memcpy(h->bin,p->h->bin,h->n*sizeof(double));
+	memcpy(h->bin,p->h->bin,h->n*sizeof(*h->bin));
 	//Scale to unit total probability.
 	VECTORDF(scale)(&vv.vector,1/gsl_blas_dasum(&vv.vector));
 	return 0;

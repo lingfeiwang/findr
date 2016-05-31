@@ -42,8 +42,7 @@ DIR_INSTALL_INC=$(DIR_INSTALL_PREFIX)/include/$(LIB_NAME)
 
 CC=gcc
 F90C=gfortran
-F90FLAGS=-fPIC -fdefault-real-8 -ffixed-form
-#-O3
+F90FLAGS=-fPIC -fdefault-real-8 -ffixed-form -O3
 LD=gcc
 #INSTALL=install
 OPTFLAGS=-O3 -DNDEBUG=1 -DGSL_RANGE_CHECK_OFF=1 -DHAVE_INLINE=1
@@ -82,7 +81,7 @@ $(LIB_CONFIG):
 	@echo "#define VERSION1 $(VERSION1)" >> $@
 	@echo "#define VERSION2 $(VERSION2)" >> $@
 	@echo "#define VERSION3 $(VERSION3)" >> $@
-	if [ -n "$(DIR_SRC_GSL)" ]; then \
+	@if [ -n "$(DIR_SRC_GSL)" ]; then \
 		echo "#define LIBGSL_LOCAL $(LIBGSL_LOCAL)" >> $@; \
 	fi
 	@echo "#endif" >> $@
@@ -144,9 +143,9 @@ Makefile.flags:
 	gver=$$($(CC) --version | grep -o gcc) ; \
 	if ! [ -n "$$gver" ]; then echo "Invalid GCC version. Please download the latest GCC."; exit 1; fi
 	# Testing test method
-	cflags="$(CFLAGS) $(CFLAGS_EXTRA) -I$(PREFIX)/include -I/usr/local/include -fopenmp -ggdb -fPIC -Wall -Wextra -Wconversion -Wsign-conversion -Wundef -Wendif-labels -std=gnu99 -pedantic-errors $(OPTFLAGS)"; \
-	ldflags="$(LDFLAGS) -L$(PREFIX)/lib -L/usr/local/lib -L/usr/lib -fopenmp -lc -lm -shared"; \
-	$(LD) $$ldflags -lc --shared -o $(TMP_FILE) &> /dev/null || \
+	@cflags="$(CFLAGS) $(CFLAGS_EXTRA) -I$(PREFIX)/include -I/usr/local/include -fopenmp -ggdb -fPIC -Wall -Wextra -Wconversion -Wsign-conversion -Wundef -Wendif-labels -std=c99 -pedantic-errors $(OPTFLAGS)"; \
+	ldflags="$(LDFLAGS) -L$(PREFIX)/lib -L/usr/local/lib -L/usr/lib -fopenmp -lc -lm -shared -lgfortran"; \
+	$(LD) $$ldflags --shared -o $(TMP_FILE) &> /dev/null || \
 	( echo "Linking with default flags failed."; exit 1; ) ; \
 	echo "Testing local GSL" ; \
 	if [ -n "$(DIR_SRC_GSL)" ] ; then \

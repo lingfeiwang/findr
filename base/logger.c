@@ -19,6 +19,7 @@
 #include <stdio.h>
 #include <time.h>
 #include "os.h"
+#include "macros.h"
 #include "logger.h"
 
 struct logger LOGGER_VARIABLE;
@@ -34,12 +35,12 @@ const char* logger_mname(size_t lv)
 void logger_voutput(size_t lv,const char* file,size_t line,const char* fmt,va_list args)
 {
 	char		timing[100];
-	struct tm	str_time;
+	struct tm	*str_time;
 	time_t 		rawtime;
 	
 	time(&rawtime);
-	localtime_r(&rawtime,&str_time);
-	strftime(timing,99,"%F %T",&str_time);
+	str_time=localtime(&rawtime);
+	strftime(timing,99,"%F %T",str_time);
 
 	logprintf("%s:%s:%s:%lu: ",logger_mname(lv),timing,file,line);
 	logvprintf(fmt,args);
@@ -82,7 +83,7 @@ int logger_default_init(size_t lv)
 struct logger* logger_new(size_t lv)
 {
 	struct logger* l;
-	l=(struct logger*)calloc(1,sizeof(struct logger));
+	CALLOCSIZE(l,1);
 	if(!l)
 	{
 		logger_output(1,__FILE__,__LINE__,"Logger allocation failed.");

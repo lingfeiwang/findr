@@ -30,7 +30,7 @@
 void MATRIXFF(from_dense)(MATRIXF* dest,const FTYPE* restrict data,size_t nrow,size_t ncol)
 {
 	MATRIXFF(view) mview=MATRIXFF(view_array)((FTYPE*)data,nrow,ncol);
-	memcpy(dest,&(mview.matrix),sizeof(MATRIXF));
+	memcpy(dest,&(mview.matrix),sizeof(*dest));
 }
 
 MATRIXF* MATRIXFF(from_densefile)(FILE* f,size_t nrow,size_t ncol)

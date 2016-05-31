@@ -77,7 +77,7 @@ int supernormalize_byrow(MATRIXF* m)
 	gsl_permutation* p[nth];
 	
 	
-	Pinv=malloc(m->size2*sizeof(FTYPE));
+	MALLOCSIZE(Pinv,m->size2);
 	ret=!!Pinv;
 	for(i=0;i<nth;i++)
 	{

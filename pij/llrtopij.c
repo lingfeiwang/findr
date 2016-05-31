@@ -140,7 +140,7 @@ void pij_llrtopij_histogram_to_central(const gsl_histogram *h,gsl_histogram* hc)
 	
 	assert(hc->n==h->n+2);
 	n=h->n;
-	memcpy(hc->range+1,h->range+1,n*sizeof(double));
+	memcpy(hc->range+1,h->range+1,n*sizeof(*hc->range));
 	vv1=VECTORDF(view_array)(hc->range+1,n+1);
 	vv2=VECTORDF(view_array)(h->range,n+1);
 	VECTORDF(add)(&vv1.vector,&vv2.vector);
@@ -148,7 +148,7 @@ void pij_llrtopij_histogram_to_central(const gsl_histogram *h,gsl_histogram* hc)
 	hc->range[0]=h->range[0];
 	hc->range[n+1]=h->range[n];
 	hc->range[n+2]=hc->range[n+1]+fabs(hc->range[n+1]);
-	memcpy(hc->bin+1,h->bin,h->n*sizeof(double));
+	memcpy(hc->bin+1,h->bin,h->n*sizeof(*hc->bin));
 	//Use fixed boundary condition
 	hc->bin[0]=hc->bin[1];
 	hc->bin[h->n+1]=hc->bin[h->n];

@@ -40,7 +40,7 @@ double* histogram_uniformbins(double dmin,double dmax,size_t n)
 	size_t	i;
 	double	step;
 	
-	ans=malloc((n+1)*sizeof(double));
+	MALLOCSIZE(ans,n+1);
 	if(!ans)
 	{
 		LOG(1,"Not enough memory.")
@@ -284,7 +284,7 @@ double* histogram_unequalbins_exp_vf(const VECTORF* d,size_t nsmnv,double nbinsp
 	nb=nbr*nbin1+1;
 	nbe=nb+nbextend*nbin1;
 	h1=gsl_histogram_alloc(nbe);
-	ans=malloc((nbin1+1)*sizeof(double));
+	MALLOCSIZE(ans,nbin1+1);
 	if(!(h1&&ans))
 		ERRRETV(0,"Not enough memory.")
 	
@@ -304,7 +304,7 @@ double* histogram_unequalbins_exp_vf(const VECTORF* d,size_t nsmnv,double nbinsp
 	h1->range[h1->n]=INFINITY;
 	
 	//Sow histogram
-	memset(h1->bin,0,h1->n*sizeof(double));
+	memset(h1->bin,0,h1->n*sizeof(*h1->bin));
 	for(i=0;i<d->size;i++)
 		gsl_histogram_increment(h1,VECTORFF(get)(d,i));
 	
@@ -350,7 +350,7 @@ double* histogram_unequalbins_exp_vf(const VECTORF* d,size_t nsmnv,double nbinsp
 		
 		//Arrange for output
 		*nbin=nbin1+nbin2;
-		ans=realloc(ans,(*nbin+1)*sizeof(double));
+		ans=realloc(ans,(*nbin+1)*sizeof(*ans));
 		if(!ans)
 			ERRRETV(0,"Not enough memory.")
 		for(i=nbin1+1;i<=*nbin;i++)
@@ -385,7 +385,7 @@ double* histogram_unequalbins_exact_vf(const VECTORF* d,double nbinsplit,size_t*
 	step=(double)l1/(double)*nbin1;
 	l2=(size_t)floor((double)l1-step);
 	nbin2=(size_t)ceil((VECTORFF(get)(vs,vs->size-1)-VECTORFF(get)(vs,l1))/(VECTORFF(get)(vs,l1)-VECTORFF(get)(vs,l2)));
-	ans=malloc((*nbin1+nbin2+1)*sizeof(double));
+	MALLOCSIZE(ans,*nbin1+nbin2+1);
 	if(!ans)
 	{
 		LOG(1,"Not enough memory.")

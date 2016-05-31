@@ -73,7 +73,7 @@ gsl_histogram** pij_llrtopij_a_nullhist(double dmax,size_t nv,size_t ns,size_t n
 	assert((2+n1d>0)&&((long)(ns-nv)+n2d>0));
 	assert(nv>=2);
 	dmax*=(1+1E-6);
-	h=calloc(nv-1,sizeof(gsl_histogram*));
+	CALLOCSIZE(h,nv-1);
 	if(!h)
 		ERRRETV(0,"Not enough memory.")
 	nbin=histogram_unequalbins_param_count(nd);
@@ -163,8 +163,8 @@ int pij_llrtopij_a_convert_single(const MATRIXF* d,const MATRIXF* dconv,MATRIXF*
 		{
 			VECTORFF(const_view)	vvd=MATRIXFF(const_row)(dconv,j);
 			VECTORDF(memcpy)(vnull,&vv1.vector);
-			memcpy(hreal->range,h->range,(nbin+1)*sizeof(double));
-			memset(hreal->bin,0,nbin*sizeof(double));
+			memcpy(hreal->range,h->range,(nbin+1)*sizeof(*hreal->range));
+			memset(hreal->bin,0,nbin*sizeof(*hreal->bin));
 			//Construct real histogram
 			if(nodiag&&j<d->size2)
 			{

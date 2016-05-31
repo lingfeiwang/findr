@@ -135,4 +135,7 @@
 #define	CLEANAMMATF(X,N)	if(X){for(i=0;i<N;i++)CLEANMATF(X[i])AUTOFREE(X)}
 
 
+#define	MALLOCSIZE(X,N)	((X)=malloc((N)*sizeof(*(X))))
+#define	CALLOCSIZE(X,N)	((X)=calloc((N),sizeof(*(X))))
+
 #endif

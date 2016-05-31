@@ -30,7 +30,7 @@
 #include "../llrtopij.h"
 #include "llrtopij_a.h"
 #include "llrtopij.h"
-
+#pragma GCC diagnostic ignored "-Wunused-parameter"
 
 int pij_gassist_llrtopij_a_convert(const MATRIXF* d,const MATRIXF* dconv,MATRIXF* ans,const MATRIXG* g,size_t nv,long n1d,long n2d,char nodiag)
 {
@@ -105,8 +105,8 @@ int pij_gassist_llrtopij_a_convert(const MATRIXF* d,const MATRIXF* dconv,MATRIXF
 					VECTORFF(const_view)	vvd=MATRIXFF(const_row)(dconv,j);
 					vv1=VECTORDF(view_array)(h[i-2]->bin,nbin);
 					VECTORDF(memcpy)(vnull,&vv1.vector);
-					memcpy(hreal->range,h[i-2]->range,(nbin+1)*sizeof(double));
-					memset(hreal->bin,0,nbin*sizeof(double));
+					memcpy(hreal->range,h[i-2]->range,(nbin+1)*sizeof(*hreal->range));
+					memset(hreal->bin,0,nbin*sizeof(*hreal->bin));
 					//Construct real histogram
 					if(nodiag&&j<d->size2)
 					{
