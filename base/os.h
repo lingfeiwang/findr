@@ -19,27 +19,21 @@
 #ifndef _HEADER_LIB_OS_H_
 #define _HEADER_LIB_OS_H_
 
+#ifdef _NEWLINE_
+#undef _NEWLINE_
+#endif
+
 // OS dependent new line
-#ifdef __unix__
-#ifdef _NEWLINE_
-#undef _NEWLINE_
-#endif
+#if defined(unix) || defined(__unix__) || defined(__unix) || defined(__APPLE__) || defined(__MACH__) || defined(__linux__)
 #define _NEWLINE_	"\n"
+#define	PRINTFSIZET	"%zu"
 #endif
-#ifdef __linux__
-#ifdef _NEWLINE_
-#undef _NEWLINE_
-#endif
-#define _NEWLINE_	"\n"
-#endif
-#ifdef __APPLE__
-#ifdef _NEWLINE_
-#undef _NEWLINE_
-#endif
-#define _NEWLINE_	"\n"
+#if defined(_WIN32) || defined(_WIN64)
+#define _NEWLINE_	"\r\n"
+#define	PRINTFSIZET	"%Iu"
 #endif
 #ifndef _NEWLINE_
-#error Unknown OS
+#error Unsupported OS
 #endif
 
 #endif

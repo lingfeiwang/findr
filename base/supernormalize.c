@@ -46,7 +46,7 @@ void supernormalize_byrow_single_buffed(MATRIXF* m,gsl_permutation *p1,const FTY
 void supernormalize_byrow_buffed(MATRIXF* m,gsl_permutation * const *p,FTYPE* Pinv)
 {
 	size_t	nth=(size_t)omp_get_max_threads();
-	LOG(10,"Supernormalization started for matrix size (%lu*%lu) on %lu threads.",m->size1,m->size2,nth)
+	LOG(10,"Supernormalization started for matrix size ("PRINTFSIZET"*"PRINTFSIZET") on "PRINTFSIZET" threads.",m->size1,m->size2,nth)
 	supernormalize_Pinv(m->size2,Pinv);
 
 	#pragma omp parallel
@@ -119,7 +119,7 @@ void supernormalizer_byrow_single_buffed(MATRIXF* m,gsl_permutation *p1,VECTORF*
 void supernormalizer_byrow_buffed(MATRIXF* m,MATRIXF* mb,gsl_permutation * const *p,gsl_rng * const* rng)
 {
 	size_t	nth=(size_t)omp_get_max_threads();
-	LOG(10,"Randomized normalization started for matrix size (%lu*%lu) on %lu threads.",m->size1,m->size2,nth)
+	LOG(10,"Randomized normalization started for matrix size ("PRINTFSIZET"*"PRINTFSIZET") on "PRINTFSIZET" threads.",m->size1,m->size2,nth)
 
 	#pragma omp parallel
 	{

@@ -52,7 +52,7 @@ long count_instance_fromfile(FILE* f,size_t size,size_t num,int (*func)(const vo
 
 	if(!dat)
 	{
-		LOG(3,"Can't allocate memory of size %lu.",size)
+		LOG(3,"Can't allocate memory of size "PRINTFSIZET".",size)
 		return -1;
 	}
 	for(i=0,n=0;i<num;i++)

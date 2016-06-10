@@ -52,7 +52,7 @@ void LIBINFONAME(lib_init)(unsigned char loglv,unsigned long rs0,size_t nthread)
 		omp_set_num_threads((int)nthread);
 	nth=(size_t)omp_get_max_threads();
 	gsl_set_error_handler_off();
-	LOG(7,"Library started with log level %u, initial random seed %lu, and max thread count %lu.",loglv,rs,nth)
+	LOG(7,"Library started with log level %u, initial random seed %lu, and max thread count "PRINTFSIZET".",loglv,rs,nth)
 }
 
 const char* LIBINFONAME(lib_name)()

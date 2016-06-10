@@ -41,11 +41,11 @@ gsl_histogram* pij_llrtopij_a_nullhist_single(double dmax,size_t nd,size_t n1,si
 	dmax*=(1+1E-6);
 	nbin=histogram_unequalbins_param_count(nd);
 	if(nbin<5)
-		ERRRETV(0,"Determined %lu bins constructed. Bin count too small.",nbin)
+		ERRRETV(0,"Determined "PRINTFSIZET" bins constructed. Bin count too small.",nbin)
 	else if(nbin<10)
-		LOG(5,"Determined %lu bins, smaller than recommended minimum bin count (10).",nbin)
+		LOG(5,"Determined "PRINTFSIZET" bins, smaller than recommended minimum bin count (10).",nbin)
 	else
-		LOG(9,"Determined %lu bins.",nbin)
+		LOG(9,"Determined "PRINTFSIZET" bins.",nbin)
 	h=gsl_histogram_alloc(nbin);
 	if(!h)
 		ERRRETV(0,"Not enough memory.")
@@ -78,11 +78,11 @@ gsl_histogram** pij_llrtopij_a_nullhist(double dmax,size_t nv,size_t ns,size_t n
 		ERRRETV(0,"Not enough memory.")
 	nbin=histogram_unequalbins_param_count(nd);
 	if(nbin<5)
-		ERRRETV(0,"Determined %lu bins constructed. Bin count too small.",nbin)
+		ERRRETV(0,"Determined "PRINTFSIZET" bins constructed. Bin count too small.",nbin)
 	else if(nbin<10)
-		LOG(5,"Determined %lu bins, smaller than recommended minimum bin count (10).",nbin)
+		LOG(5,"Determined "PRINTFSIZET" bins, smaller than recommended minimum bin count (10).",nbin)
 	else
-		LOG(9,"Determined %lu bins.",nbin)
+		LOG(9,"Determined "PRINTFSIZET" bins.",nbin)
 	ret=1;
 	for(i=0;i<nv-1;i++)
 		ret=ret&&(h[i]=gsl_histogram_alloc(nbin));

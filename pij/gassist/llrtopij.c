@@ -121,7 +121,7 @@ int pij_gassist_llrtopijs_nv(const MATRIXG* g,const MATRIXF* t,const MATRIXF* t2
 	MATRIXFF(set_all)(p3,0);
 	for(i=0;i<ng;i++)
 		if(VECTORGF(get)(vnv,i)<=1)
-			ERRRET("Genotype has only one value at location %lu.",i);
+			ERRRET("Genotype has only one value at location "PRINTFSIZET".",i);
 	for(i=2;i<=nv;i++)
 	{
 		VECTORGF(eq)(vnv,vselect,(GTYPE)i);
@@ -141,12 +141,12 @@ int pij_gassist_llrtopijs_nv(const MATRIXG* g,const MATRIXF* t,const MATRIXF* t2
 		vv2=VECTORFF(subvector)(vp2,0,nc);
 		if(VECTORFF(first_nan)(&vv1.vector)>=0)
 		{
-			LOG(4,"Infinity found for log likelihood ratio of nv=%lu, possibly because data contains fully correlated/anticorrelated columns. This may affect downstream analyses.",i)
+			LOG(4,"Infinity found for log likelihood ratio of nv="PRINTFSIZET", possibly because data contains fully correlated/anticorrelated columns. This may affect downstream analyses.",i)
 			VECTORFF(set_nan)(&vv1.vector,0);
 		}
 		ret=pij_gassist_llrtopij2c_tot(&mgs.matrix,&vv1.vector,&vv2.vector,nv,&nratio);
 		if(ret)
-			ERRRET("Failed to calculate probabilities in step 2 for nv=%lu.",i)
+			ERRRET("Failed to calculate probabilities in step 2 for nv="PRINTFSIZET".",i)
 		if(nodiag)
 			MATRIXFF(rows_load_nodiag)(vp2,p2,vselect);
 		else
@@ -166,12 +166,12 @@ int pij_gassist_llrtopijs_nv(const MATRIXG* g,const MATRIXF* t,const MATRIXF* t2
 		vv2=VECTORFF(subvector)(vp3,0,nc);
 		if(VECTORFF(first_nan)(&vv1.vector)>=0)
 		{
-			LOG(4,"Infinity found for log likelihood ratio of nv=%lu, possibly because data contains fully correlated/anticorrelated columns. This may affect downstream analyses.",i)
+			LOG(4,"Infinity found for log likelihood ratio of nv="PRINTFSIZET", possibly because data contains fully correlated/anticorrelated columns. This may affect downstream analyses.",i)
 			VECTORFF(set_nan)(&vv1.vector,0);
 		}
 		ret=pij_gassist_llrtopij3_tot(&mgs.matrix,&vv1.vector,&vv2.vector,nv,&nratio);
 		if(ret)
-			ERRRET("Failed to calculate probabilities in step 3 for nv=%lu.",i)
+			ERRRET("Failed to calculate probabilities in step 3 for nv="PRINTFSIZET".",i)
 		if(nodiag)
 			MATRIXFF(rows_load_nodiag)(vp3,p3,vselect);
 		else

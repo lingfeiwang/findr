@@ -40,9 +40,9 @@ void logger_voutput(size_t lv,const char* file,size_t line,const char* fmt,va_li
 	
 	time(&rawtime);
 	str_time=localtime(&rawtime);
-	strftime(timing,99,"%F %T",str_time);
+	strftime(timing,99,"%Y-%m-%d %H:%M:%S",str_time);
 
-	logprintf("%s:%s:%s:%lu: ",logger_mname(lv),timing,file,line);
+	logprintf("%s:%s:%s:"PRINTFSIZET": ",logger_mname(lv),timing,file,line);
 	logvprintf(fmt,args);
 	logprintf("%s",_NEWLINE_);
 }

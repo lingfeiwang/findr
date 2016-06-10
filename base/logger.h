@@ -21,6 +21,7 @@
 #include "config.h"
 #include <stdlib.h>
 #include <stdarg.h>
+#include "os.h"
 #ifdef __cplusplus
 extern "C"
 {

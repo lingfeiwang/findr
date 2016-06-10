@@ -214,8 +214,8 @@ gsl_histogram* histogram_unequalbins_exact(const VECTORF* d,const void* param)
 		ERRRETV(0,"Failed to auto-discover histogram paramters: not enough data.")
 	binr=histogram_unequalbins_exact_vf(d,nbinsplit,&nbin1,&nbin);
 	if(!binr)
-		ERRRETV(0,"Bin range construction failed for %lu bins of equal count for %F quantile.",nbin1,nbinsplit)
-	LOG(9,"Histogram range constructed: %lu bins of equal count for %F quantile, %lu bins of equal width for the rest.",nbin1,nbinsplit,nbin-nbin1)
+		ERRRETV(0,"Bin range construction failed for "PRINTFSIZET" bins of equal count for %F quantile.",nbin1,nbinsplit)
+	LOG(9,"Histogram range constructed: "PRINTFSIZET" bins of equal count for %F quantile, "PRINTFSIZET" bins of equal width for the rest.",nbin1,nbinsplit,nbin-nbin1)
 	h=gsl_histogram_alloc(nbin);
 	if(!h)
 		ERRRETV(0,"Not enough memory.")
@@ -240,8 +240,8 @@ gsl_histogram* histogram_unequalbins_exp(const VECTORF* d,const void* param)
 		ERRRETV(0,"Failed to auto-discover histogram paramters: not enough data.")
 	binr=histogram_unequalbins_exp_vf(d,p->nsmnv,nbinsplit,nbin1,&nbin);
 	if(!binr)
-		ERRRETV(0,"Bin range construction failed for %lu bins of equal count for %F quantile.",nbin1,nbinsplit)
-	LOG(9,"Histogram range constructed: %lu bins of equal count for %F quantile, %lu bins of equal width for the rest.",nbin1,nbinsplit,nbin-nbin1)
+		ERRRETV(0,"Bin range construction failed for "PRINTFSIZET" bins of equal count for %F quantile.",nbin1,nbinsplit)
+	LOG(9,"Histogram range constructed: "PRINTFSIZET" bins of equal count for %F quantile, "PRINTFSIZET" bins of equal width for the rest.",nbin1,nbinsplit,nbin-nbin1)
 	h=gsl_histogram_alloc(nbin);
 	if(!h)
 		ERRRETV(0,"Not enough memory.")

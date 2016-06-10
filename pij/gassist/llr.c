@@ -649,7 +649,7 @@ int pij_gassist_llr(const MATRIXG* g,const MATRIXF* t,const MATRIXF* t2,VECTORF*
 	{
 		GTYPE	tg=MATRIXGF(max)(g);
 		if(tg>=nv)
-			ERRRET("Maximum genotype value %lu exceeds the stated maximum possible value %lu. Please check your input genotype matrix and allele count.",tg,nv-1)
+			ERRRET("Maximum genotype value "PRINTFSIZET" exceeds the stated maximum possible value "PRINTFSIZET". Please check your input genotype matrix and allele count.",tg,nv-1)
 	}
 	//Buff unit vector
 	vbuff1=VECTORFF(alloc)(g->size2);
