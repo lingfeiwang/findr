@@ -34,7 +34,19 @@
 #include "llrtopij.h"
 #pragma GCC diagnostic ignored "-Wunused-parameter"
 
-void pij_llrtopij_histogram_force_incremental_buffed(gsl_histogram *h,VECTORD* hup)
+/* Smoothen true ratio histogram to make it monotonically increasing
+ * Method:	1.	Construct increasing upper bound histogram (hup)
+ * 				so every bin is max(self,left neighbor of self)
+ * 			2.	Construct increasing lower bound histogram (hlow)
+ * 				so every bin is min(self,right neighbor of self)
+ * 			3.	Return (hup+hlow)/2
+ * h:		[n] double histogram to be smoothened
+ * 			Input as histogram of true ratio and,
+ * 			output as smoothened histogram of true ratio
+ * n:		size of histogram
+ * Return:	0 on success.
+ */
+static void pij_llrtopij_histogram_force_incremental_buffed(gsl_histogram *h,VECTORD* hup)
 {
 	VECTORDF(view)	hlow=VECTORDF(view_array)(h->bin,h->n);
 	size_t	i;
@@ -52,19 +64,23 @@ void pij_llrtopij_histogram_force_incremental_buffed(gsl_histogram *h,VECTORD* h
 	VECTORDF(scale)(&hlow.vector,0.5);
 }
 
-int pij_llrtopij_histogram_force_incremental(gsl_histogram *h)
-{
-#define	CLEANUP	AUTOFREEVEC(hup)
-	AUTOALLOCVECD(hup,h->n,1000)
-	if(!hup)
-		ERRRET("Not enough memory.")
-	pij_llrtopij_histogram_force_incremental_buffed(h,hup);
-	CLEANUP
-	return 0;
-#undef	CLEANUP
-}
-
-void pij_llrtopij_histogram_smoothen_buffed(gsl_histogram *h,double sigma,size_t ncut,VECTORD *vlarge,VECTORD *vconv)
+/* Smoothen 1D histogram with buffer provided as the following:
+ * 1. Calculate bin differences.
+ * 2. Extrapolates with fixed boundary values to ensure same size of histogram
+ * 3. Convolution with Gaussian filter.
+ * 4. Calculate cumulative sum
+ * 5. Scale and shift to original head-tail positions
+ * WARNING:	Gaussian filter applied using bin index as distance measure,
+ * 			not the actual histogram range.
+ * h:		[n] double histogram to be smoothened
+ * n:		size of histogram
+ * sigma:	sigma of Gaussian filter
+ * ncut:	size of Gaussian convolution vector is 2*ncut+1
+ * vlarge:	[n+2*ncut-1] Buffer for data before convolution
+ * vconv:	[2*ncut+1] Buffer for convolution mask.
+ * Return:	0 on success
+ */
+static void pij_llrtopij_histogram_smoothen_buffed(gsl_histogram *h,double sigma,size_t ncut,VECTORD *vlarge,VECTORD *vconv)
 {
 	VECTORDF(view)	vv1,vv2;
 	double	tmp,dmin,ddiff,t1,t2;
@@ -119,21 +135,12 @@ void pij_llrtopij_histogram_smoothen_buffed(gsl_histogram *h,double sigma,size_t
 	VECTORDF(add_constant)(&vv2.vector,dmin-t1);
 }
 
-int pij_llrtopij_histogram_smoothen(gsl_histogram *h,double sigma,size_t ncut)
-{
-#define	CLEANUP	AUTOFREEVEC(vlarge)AUTOFREEVEC(vconv)
-	AUTOALLOCVECD(vlarge,h->n+2*ncut-1,1000)
-	AUTOALLOCVECD(vconv,2*ncut+1,500)
-	
-	if(!(vlarge&&vconv))
-		ERRRET("Not enough memory.")	
-	pij_llrtopij_histogram_smoothen_buffed(h,sigma,ncut,vlarge,vconv);
-	CLEANUP
-	return 0;
-#undef CLEANUP
-}
-
-void pij_llrtopij_histogram_to_central(const gsl_histogram *h,gsl_histogram* hc)
+/* Construct central value histogram from bounded histogram for interpolation.
+ * In central value histogram, bin[i] is the value at range[i].
+ * h:		(nbin) Input bounded histogram
+ * hc:		(nbin+2) Output central value histogram
+ */
+static void pij_llrtopij_histogram_to_central(const gsl_histogram *h,gsl_histogram* hc)
 {
 	size_t	n;
 	VECTORDF(view)	vv1,vv2;
@@ -152,19 +159,6 @@ void pij_llrtopij_histogram_to_central(const gsl_histogram *h,gsl_histogram* hc)
 	//Use fixed boundary condition
 	hc->bin[0]=hc->bin[1];
 	hc->bin[h->n+1]=hc->bin[h->n];
-}
-
-gsl_histogram* pij_llrtopij_histogram_central_from(const gsl_histogram *h)
-{
-	gsl_histogram *hc;
-	hc=gsl_histogram_alloc(h->n+2);
-	if(!hc)
-	{
-		LOG(1,"Not enough memory.")
-		return 0;
-	}
-	pij_llrtopij_histogram_to_central(h,hc);
-	return hc;
 }
 
 void pij_llrtopij_histogram_interpolate_linear(const gsl_histogram *hc,const VECTORF* d,VECTORF* ans)

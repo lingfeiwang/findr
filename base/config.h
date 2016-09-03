@@ -21,11 +21,9 @@
 #define _HEADER_LIB_CONFIG_H_
 #include "config_auto.h"
 #ifdef LIBEXTENSION_R
-//#include <R_ext/Print.h>
-//#define logprintf REprintf
-//#define	logvprintf REvprintf
-#define logprintf(...) fprintf(stderr,__VA_ARGS__)
-#define logvprintf(...) vfprintf(stderr,__VA_ARGS__)
+#include <R_ext/Print.h>
+#define logprintf REprintf
+#define	logvprintf REvprintf
 #ifdef	NDEBUG
 #undef	NDEBUG
 #endif

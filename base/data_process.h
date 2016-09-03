@@ -28,6 +28,7 @@
 #include "gsl/blas.h"
 #include "gsl/permutation.h"
 #include "types.h"
+#include "random.h"
 #ifdef __cplusplus
 extern "C"
 {
@@ -44,7 +45,7 @@ void MATRIXFF(from_dense)(MATRIXF* dest,const FTYPE* restrict data,size_t nrow,s
  */
 MATRIXF* MATRIXFF(from_densefile)(FILE* f,size_t nrow,size_t ncol);
 
-/* Normalize matrix (m) for earch row, with buffer vectors v1, v2, of sizes
+/* Normalize matrix (m) for each row, with buffer vectors v1, v2, of sizes
  * m->size1 and m->size2 respectively.
  * m:	(n1,n2) Matrix to be normalized row by row.
  * v1:	(n1) Buffer
@@ -320,7 +321,19 @@ static inline void VECTOROF(diff)(VECTORF* d);
 static inline void VECTORDF(cumsum)(VECTORD* d);
 static inline void VECTOROF(cumsum)(VECTORF* d);
 
+/* Randomly fluctuate every element in matrix relatively.
+ * m:		Matrix to fluctuate
+ * fluc:	Relative amplitude of fluctuation. Every element x is replaced with
+ * 			x*(1+y*fluc), where y is uniformly distributed in [-1,1)
+ */
+static inline void MATRIXFF(fluc)(MATRIXF* m,FTYPE fluc);
 
+/* Randomly fluctuate every element in vector relatively.
+ * v:		Vector to fluctuate
+ * fluc:	Relative amplitude of fluctuation. Every element x is replaced with
+ * 			x*(1+y*fluc), where y is uniformly distributed in [-1,1)
+ */
+static inline void VECTORFF(fluc)(VECTORF* v,FTYPE fluc);
 
 static inline void MATRIXFF(flatten)(const MATRIXF* m,VECTORF* v)
 {
@@ -729,6 +742,50 @@ static inline void VECTOROF(cumsum)(VECTORF* d)
 	for(i=1;i<d->size;i++)
 		VECTORFF(ptr)(d,i)[0]+=VECTORFF(get)(d,i-1);
 }
+
+static inline void MATRIXFF(fluc)(MATRIXF* m,FTYPE fluc)
+{
+	size_t	i,j;
+	for(i=0;i<m->size1;i++)
+		for(j=0;j<m->size2;j++)
+			MATRIXFF(ptr)(m,i,j)[0]*=(FTYPE)(1+(2*random_uniform()-1)*fluc);
+}
+
+static inline void VECTORFF(fluc)(VECTORF* v,FTYPE fluc)
+{
+	size_t	i;
+	for(i=0;i<v->size;i++)
+		VECTORFF(ptr)(v,i)[0]*=(FTYPE)(1+(2*random_uniform()-1)*fluc);
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

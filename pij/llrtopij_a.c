@@ -30,7 +30,22 @@
 #include "llrtopij_a.h"
 #include "llrtopij.h"
 
-gsl_histogram* pij_llrtopij_a_nullhist_single(double dmax,size_t nd,size_t n1,size_t n2)
+/* Construct one null histogram for a specific genotype value count.
+ * The function calculates the null density histogram for random variable:
+ * x=-0.5*log(1-z1/(z1+z2)), where z1~chi2(n1),z2~chi2(n2),
+ * Histogram bin count and width are automatically determined
+ * from real data count (nd).
+ * For bin range settings, see histogram_unequalbins_fromnullcdf.
+ * For null density histogram from pdf, see pij_nulldist_hist_pdf.
+ * dmax:	Specifies the histogram bound as [0,dmax).
+ * nd:		Count of real data to form real histograms. This is used to
+ * 			automatically decide number of bins and widths.
+ * n1,
+ * n2:		Parameters of null distribution.
+ * Return:	Constructed null distribution histograms with preset
+ * 			bin ranges and values as density.
+ */
+static gsl_histogram* pij_llrtopij_a_nullhist_single(double dmax,size_t nd,size_t n1,size_t n2)
 {
 #define	CLEANUP	CLEANHIST(h)
 	struct pij_nulldist_pdfs_param param={n1,n2};
@@ -61,16 +76,14 @@ gsl_histogram* pij_llrtopij_a_nullhist_single(double dmax,size_t nd,size_t n1,si
 #undef	CLEANUP
 }
 
-gsl_histogram** pij_llrtopij_a_nullhist(double dmax,size_t nv,size_t ns,size_t nd,long n1d,long n2d)
+gsl_histogram** pij_llrtopij_a_nullhist(double dmax,size_t nv,size_t nd,long n1c,size_t n1d,long n2c,size_t n2d)
 {
 #define	CLEANUP	if(h){for(i=0;i<nv-1;i++)CLEANHIST(h[i])free(h);h=0;}
-// 	struct pij_nulldist_cdf_callback_param cdfparam;
 	struct pij_nulldist_pdfs_param param;
 	size_t	nbin,i;
 	int		ret;
 	gsl_histogram **h;
 	
-	assert((2+n1d>0)&&((long)(ns-nv)+n2d>0));
 	assert(nv>=2);
 	dmax*=(1+1E-6);
 	CALLOCSIZE(h,nv-1);
@@ -93,8 +106,8 @@ gsl_histogram** pij_llrtopij_a_nullhist(double dmax,size_t nv,size_t ns,size_t n
 	{
 		gsl_histogram_set_ranges_uniform(h[i],0,dmax);
 		//Set null histogram ranges
-		param.n1=(size_t)((long)(i+2)+n1d);
-		param.n2=(size_t)((long)(ns-i-2)+n2d);
+		param.n1=(size_t)((long)i*n1c+(long)n1d);
+		param.n2=(size_t)(-(long)i*n2c+(long)n2d);
 		if(histogram_unequalbins_fromnullpdfs(nbin,h[i]->range,pij_nulldist_pdfs,&param))
 			ERRRETV(0,"histogram_unequalbins_fromnullpdfs failed.")
 		//Calculate null density histogram

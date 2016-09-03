@@ -34,18 +34,6 @@ extern "C"
 {
 #endif
 
-/* Calculates the log likelihood ratio correlated v.s. uncorrelated models.
- * Uses GSL BLAS.
- */
-void pij_rank_llr_block(const MATRIXF* t,const MATRIXF* t2,MATRIXF* llr);
-
-/* Multithread calculation of log likelihood ratio
- * t:	(ng,ns) Full transcript data matrix of A
- * t2:	(nt,ns) Full transcript data matrix of B
- * llr:	(ng,nt). Log likelihood ratios for test.
- */
-void pij_rank_llr(const MATRIXF* t,const MATRIXF* t2,MATRIXF* llr);
-
 /* Convert LLR into probabilities per A. Uses pij_llrtopij_a_convert.
  * d:		(ng,nx) Source real LLRs to compare with null LLRs
  * dconv:	(ng,nt) LLRs to convert to probabilities. Can differ from d
@@ -56,19 +44,6 @@ void pij_rank_llr(const MATRIXF* t,const MATRIXF* t2,MATRIXF* llr);
  * Return:	0 if succeed.
  */
 int pij_rank_llrtopij_a(const MATRIXF* d,const MATRIXF* dconv,MATRIXF* ans,size_t ns,char nodiag);
-
-/* Calculate probabilities of A--B based on LLR distributions of real data 
- * and null hypothesis.
- * t:		(ng,ns) Expression data for A
- * t2:		(nt,ns) Expression data for B
- * p:		(ng,nt) Output for probabilities A--B is true
- * nodiag:	When the top ng rows of t2 is exactly t, diagonals of pij are meaningless.
- *			In this case, set nodiag to 1 to avoid inclusion of NANs. For nodiag=0, t and t2
- *			should not have any identical genes.
- * pij:		Function to convert LLR to probabilities, such as pij_rank_llrtopij_a
- * Return:	0 if succeed.
- */
-int pij_rank_pij_any(const MATRIXF* t,const MATRIXF* t2,MATRIXF* p,char nodiag,int (*pij)(const MATRIXF*,const MATRIXF*,MATRIXF*,size_t,char));
 
 /* Calculate probabilities of A--B based on LLR distributions of real data 
  * and null hypothesis. Conversion from LLR to probability is per A.

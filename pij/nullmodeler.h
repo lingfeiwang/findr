@@ -117,25 +117,8 @@ struct pij_nullmodeler_exp_state
 	FTYPE	v;
 };
 
+extern const struct pij_nullmodeler pij_nullmodeler_exp;
 
-void* pij_nullmodeler_exp_init_container(const void* d,const void* pm,const gsl_histogram* h);
-int pij_nullmodeler_exp_output(const void* c,gsl_histogram* h);
-void pij_nullmodeler_exp_close_container(void* c);
-void* pij_nullmodeler_exp_init(const void* c,const void* d,size_t n1,size_t n2);
-void pij_nullmodeler_exp_input(void* m,const VECTORF* data);
-void pij_nullmodeler_exp_merge(const void* m,void* c);
-void pij_nullmodeler_exp_close(void* m);
-
-
-static const struct pij_nullmodeler pij_nullmodeler_exp={
-	pij_nullmodeler_exp_init_container,
-	pij_nullmodeler_exp_output,
-	pij_nullmodeler_exp_close_container,
-	pij_nullmodeler_exp_init,
-	pij_nullmodeler_exp_input,
-	pij_nullmodeler_exp_merge,
-	pij_nullmodeler_exp_close
-};
 
 /*************************************************************************
  * Naive modeler assumes the pdf of falling into each bin is exactly proportional
@@ -148,25 +131,7 @@ struct pij_nullmodeler_naive_state
 	gsl_histogram* h;
 };
 
-
-void*	pij_nullmodeler_naive_init_container(const void* d,const void* pm,const gsl_histogram* h);
-int 	pij_nullmodeler_naive_output(const void* c,gsl_histogram* h);
-void	pij_nullmodeler_naive_close_container(void* c);
-void* 	pij_nullmodeler_naive_init(const void* c,const void* d,size_t n1,size_t n2);
-void 	pij_nullmodeler_naive_input(void* m,const VECTORF* data);
-void 	pij_nullmodeler_naive_merge(const void* m,void* c);
-void 	pij_nullmodeler_naive_close(void* m);
-
-
-static const struct pij_nullmodeler pij_nullmodeler_naive={
-	pij_nullmodeler_naive_init_container,
-	pij_nullmodeler_naive_output,
-	pij_nullmodeler_naive_close_container,
-	pij_nullmodeler_naive_init,
-	pij_nullmodeler_naive_input,
-	pij_nullmodeler_naive_merge,
-	pij_nullmodeler_naive_close
-};
+extern const struct pij_nullmodeler pij_nullmodeler_naive;
 
 
 

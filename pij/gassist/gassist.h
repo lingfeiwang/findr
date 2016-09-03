@@ -27,40 +27,33 @@ extern "C"
 {
 #endif
 
-/* Estimates the probability p(E->A->B) from genotype and expression data in 3 steps.
+/* Estimates the probability of A->B from genotype and expression data with 5 tests.
  * E is always the best eQTL of A. Full data is required.
- * For strategy in step 3, check pij_gassist_llrtopijs.
  * g:	(ng,ns) Genotype data, =0,1,...,nv-1. Each is the best eQTL of the corresponding gene in t.
  * t:	(ng,ns) Expression data of A.
  * t2:	(nt,ns) Expression data of B. Can be A or a superset of A.
- * p1:	(ng) Probabilities of step 1.
- * p2b:	(ng,nt) Probabilities of step 2 bold.
- * p2c:	(ng,nt) Probabilities of step 2 conservative.
- * p3:	(ng,nt) Probabilities of step 3.
+ * p1:	(ng) Probabilities of step 1. Tests E->A v.s. E  A. Because the function expects significant eQTLs, p1 always return 1.
+ * p2:	(ng,nt) Probabilities of step 2. Tests E->B v.s. E  B.
+ * p3:	(ng,nt) Probabilities of step 3. Tests E->A->B v.s. E->A->B with E->B.
+ * p4:	(ng,nt) Probabilities of step 4. Tests E->A->B with E->B v.s. E->A  B.
+ * p5:	(ng,nt) Probabilities of step 5. Tests E->A->B with E->B v.s. A<-E->B.
  * nv:	Number of possible values each genotype entry may take, =number of alleles+1.
- * nodiag:	When the top ng rows of t2 is exactly t, diagonals of p2 and p3 are meaningless.
- *			In this case, set nodiag to 1 to avoid inclusion of NANs. For nodiag=0, t and t2
- *			should not have any identical genes.
+ * nodiag:	When the top ng rows of t2 is exactly t, diagonals of p2 and p3 are meaningless. In this case, set nodiag to 1 to avoid inclusion of NANs. For nodiag=0, t and t2 should not have any identical genes.
  * Return:	0 on sucess
  * Appendix:
  * 		ng:	Number of genes with best eQTL.
  * 		nt:	Number of genes with expression data for B
  * 		ns:	Number of samples.
  */
-int pijs_gassist_a(const MATRIXG* g,const MATRIXF* t,const MATRIXF* t2,VECTORF* p1,MATRIXF* p2b,MATRIXF* p2c,MATRIXF* p3,size_t nv,char nodiag);
-int pijs_gassist_tot(const MATRIXG* g,const MATRIXF* t,const MATRIXF* t2,VECTORF* p1,MATRIXF* p2b,MATRIXF* p2c,MATRIXF* p3,size_t nv,char nodiag);
-//int pij_gassist_pijs_nv(const MATRIXG* g,const MATRIXF* t,const MATRIXF* t2,VECTORF* p1,MATRIXF* p2b,MATRIXF* p2c,MATRIXF* p3,size_t nv,char nodiag);
+int pijs_gassist_tot(const MATRIXG* g,const MATRIXF* t,const MATRIXF* t2,VECTORF* p1,MATRIXF* p2,MATRIXF* p3,MATRIXF* p4,MATRIXF* p5,size_t nv,char nodiag);
+int pijs_gassist_a(const MATRIXG* g,const MATRIXF* t,const MATRIXF* t2,VECTORF* p1,MATRIXF* p2,MATRIXF* p3,MATRIXF* p4,MATRIXF* p5,size_t nv,char nodiag);
 
-/* Estimates the probability p(E->A->B) from genotype and expression data. Combines results
- * from any pij_gassist_pijs. For more information, see pij_gassist_pijs_ab.
- * ans:	(ng,nt) Output matrix for probabilities. ans[A,B] is p(E->A->B).
- * pijs:	Function to calculate pijs.
+/* Estimates the probability of A->B from genotype and expression data with defaults combination of tests. Uses results from pijs_gassist_tot or pijs_gassist_a. Variables have the same definitions except:
+ * ans:	(ng,nt) Predicted probability of A->B based on default combination of 5 tests. The default combination is (p2*p5+p4)/(max(p2*p5)+max(p4)).
+ * Return:	0 on sucess
  */
-int pij_gassist_any(const MATRIXG* g,const MATRIXF* t,const MATRIXF* t2,MATRIXF* ansb,MATRIXF* ansc,size_t nv,char nodiag,int (*pijs)(const MATRIXG*,const MATRIXF*,const MATRIXF*,VECTORF*,MATRIXF*,MATRIXF*,MATRIXF*,size_t,char));
-
-int pij_gassist_a(const MATRIXG* g,const MATRIXF* t,const MATRIXF* t2,MATRIXF* ansb,MATRIXF* ansc,size_t nv,char nodiag);
-int pij_gassist_tot(const MATRIXG* g,const MATRIXF* t,const MATRIXF* t2,MATRIXF* ansb,MATRIXF* ansc,size_t nv,char nodiag);
-//static inline int pij_gassist_pij_nv(const MATRIXG* g,const MATRIXF* t,const MATRIXF* t2,MATRIXF* ansb,MATRIXF* ansc,size_t nv,char nodiag);
+int pij_gassist_tot(const MATRIXG* g,const MATRIXF* t,const MATRIXF* t2,MATRIXF* ans,size_t nv,char nodiag);
+int pij_gassist_a(const MATRIXG* g,const MATRIXF* t,const MATRIXF* t2,MATRIXF* ans,size_t nv,char nodiag);
 
 
 #ifdef __cplusplus

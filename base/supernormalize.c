@@ -43,6 +43,21 @@ void supernormalize_byrow_single_buffed(MATRIXF* m,gsl_permutation *p1,const FTY
 	MATRIXFF(normalize_row)(m);
 }
 
+int supernormalize_byrow_single(MATRIXF* m,const FTYPE* restrict Pinv)
+{
+	gsl_permutation *p1;
+	
+	p1=gsl_permutation_alloc(m->size2);
+	if(!p1)
+	{
+		LOG(1,"Can't allocate permutations.")
+		return 1;
+	}
+	supernormalize_byrow_single_buffed(m,p1,Pinv);
+	gsl_permutation_free(p1);
+	return 0;
+}
+
 void supernormalize_byrow_buffed(MATRIXF* m,gsl_permutation * const *p,FTYPE* Pinv)
 {
 	size_t	nth=(size_t)omp_get_max_threads();
@@ -91,6 +106,31 @@ int supernormalize_byrow(MATRIXF* m)
 	CLEANUP
 	return 0;
 #undef	CLEANUP
+}
+
+int supernormalizef_byrow_single(MATRIXF* m,const FTYPE* restrict Pinv,FTYPE fluc)
+{
+	int	ret;
+	ret=supernormalizea_byrow_single(m,Pinv);
+	MATRIXFF(fluc)(m,fluc);
+	MATRIXFF(normalize_row)(m);
+	return ret;
+}
+
+void supernormalizef_byrow_buffed(MATRIXF* m,gsl_permutation * const *p,FTYPE* Pinv,FTYPE fluc)
+{
+	supernormalize_byrow_buffed(m,p,Pinv);
+	MATRIXFF(fluc)(m,fluc);
+	MATRIXFF(normalize_row)(m);
+}
+
+int supernormalizef_byrow(MATRIXF* m,FTYPE fluc)
+{
+	int		ret;
+	ret=supernormalize_byrow(m);
+	MATRIXFF(fluc)(m,fluc);
+	MATRIXFF(normalize_row)(m);
+	return ret;
 }
 
 void supernormalizer_byrow_single_buffed(MATRIXF* m,gsl_permutation *p1,VECTORF* vb,const gsl_rng* r)

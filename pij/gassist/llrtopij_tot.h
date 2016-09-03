@@ -39,9 +39,10 @@ extern "C"
  * Return:	0 on success
  */
 int pij_gassist_llrtopij1_tot(const MATRIXG* g,const VECTORF* llr,VECTORF* p,size_t nv,double* nratio);
-int pij_gassist_llrtopij2c_tot(const MATRIXG* g,const VECTORF* llr,VECTORF* p,size_t nv,double* nratio);
-int pij_gassist_llrtopij2b_tot(const MATRIXG* g,const VECTORF* llr,VECTORF* p,size_t nv,double* nratio);
+int pij_gassist_llrtopij2_tot(const MATRIXG* g,const VECTORF* llr,VECTORF* p,size_t nv,double* nratio);
 int pij_gassist_llrtopij3_tot(const MATRIXG* g,const VECTORF* llr,VECTORF* p,size_t nv,double* nratio);
+int pij_gassist_llrtopij4_tot(const MATRIXG* g,const VECTORF* llr,VECTORF* p,size_t nv,double* nratio);
+int pij_gassist_llrtopij5_tot(const MATRIXG* g,const VECTORF* llr,VECTORF* p,size_t nv,double* nratio);
 
 
 /* Calculates null log likelihood ratios from permuted data, and then convert log likelihood ratios of real data
@@ -50,13 +51,15 @@ int pij_gassist_llrtopij3_tot(const MATRIXG* g,const VECTORF* llr,VECTORF* p,siz
  * t:		(ng,ns) Full transcript data of A. Each rows best eQTL must be the same row of g
  * t2:		(nt,ns) Full transcript data of B.
  * llr1:	(ng) Log likelihood ratios of real data for step 1
- * llr2b:	(ng,nt) Log likelihood ratios of real data for step 2 bold
- * llr2c:	(ng,nt) Log likelihood ratios of real data for step 2 conservative
+ * llr2:	(ng,nt) Log likelihood ratios of real data for step 2
  * llr3:	(ng,nt) Log likelihood ratios of real data for step 3
+ * llr4:	(ng,nt) Log likelihood ratios of real data for step 4
+ * llr5:	(ng,nt) Log likelihood ratios of real data for step 5
  * p1:		(ng) Output for converted probabilities of step 1
- * p2b:		(ng,nt) Output for converted probabilities of step 2 bold
- * p2c:		(ng,nt) Output for converted probabilities of step 2 conservative
+ * p2:		(ng,nt) Output for converted probabilities of step 2
  * p3:		(ng,nt) Output for converted probabilities of step 3
+ * p4:		(ng,nt) Output for converted probabilities of step 4
+ * p5:		(ng,nt) Output for converted probabilities of step 5
  * ans:		(ng,nt) Output matrix of converted probabilities
  * nv:		number of possible genotype values for each SNP
  * nodiag:	When the top ng rows of t2 is exactly t, diagonals of p2 and p3 are meaningless.
@@ -64,16 +67,7 @@ int pij_gassist_llrtopij3_tot(const MATRIXG* g,const VECTORF* llr,VECTORF* p,siz
  *			should not have any identical genes.
  * Return:	0 on success
  */
-int pij_gassist_llrtopijs_tot(const MATRIXG* g,const MATRIXF* t,const MATRIXF* t2,const VECTORF* llr1,const MATRIXF* llr2b,const MATRIXF* llr2c,const MATRIXF* llr3,VECTORF* p1,MATRIXF* p2b,MATRIXF* p2c,MATRIXF* p3,size_t nv,char nodiag);
-
-/* Calculates null log likelihood ratios from permuted data, and then convert log likelihood ratios of real data
- * into probabilities. Combines results from pij_gassist_llrtopijs. For more information, see pij_gassist_llrtopijs.
- * ansb:	(ng,nt) Output for converted probabilities with step 2 bold.
- * ansc:	(ng,nt) Output for converted probabilities with step 2 conservative.
- * Return:	0 on success.
- */
-int pij_gassist_llrtopij_tot(const MATRIXG* g,const MATRIXF* t,const MATRIXF* t2,const VECTORF* llr1,const MATRIXF* llr2b,const MATRIXF* llr2c,const MATRIXF* llr3,MATRIXF* ansb,MATRIXF* ansc,size_t nv,char nodiag);
-
+int pij_gassist_llrtopijs_tot(const MATRIXG* g,const MATRIXF* t,const MATRIXF* t2,const VECTORF* llr1,const MATRIXF* llr2,const MATRIXF* llr3,const MATRIXF* llr4,const MATRIXF* llr5,VECTORF* p1,MATRIXF* p2,MATRIXF* p3,MATRIXF* p4,MATRIXF* p5,size_t nv,char nodiag);
 
 
 

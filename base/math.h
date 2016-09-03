@@ -45,6 +45,8 @@ static inline double math_sf_expminusone(double x);
 // Calculates log(x+1), where x can be close to 0.
 static inline double math_sf_logplusone(double x);
 
+// Calculates hypergeometric function minus 1, i.e. 2F1(a,b,c;x)-1
+int math_sf_2F1_m1(const double a, const double b, const double c,const double x, gsl_sf_result * result);
 
 /**************************************************
  * CDF related functions
@@ -86,7 +88,7 @@ static inline double math_sf_lngammahalf(size_t n)
 	{
 		if(!n2)
 			return M_LNPI/2;
-		else if(n2<170)
+		else if(n2<GSL_SF_FACT_NMAX)
 			return M_LNPI/2+gsl_sf_lndoublefact((unsigned int)(n-2))-(double)(n-1)*M_LN2/2;
 		else
 			return gsl_sf_lngamma(((double)n)/2);
@@ -95,7 +97,7 @@ static inline double math_sf_lngammahalf(size_t n)
 	{
 		if(!n2)
 			return INFINITY;
-		else if (n2<170)
+		else if (n2<=GSL_SF_DOUBLEFACT_NMAX)
 			return gsl_sf_lnfact((unsigned int)(n2-1));
 		else
 			return gsl_sf_lngamma((double)n2);

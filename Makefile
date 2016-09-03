@@ -14,7 +14,7 @@ URL_LIB_REL="$(URL_LIB)/releases"
 URL_BIN_REL="$(URL_BIN)/releases"
 URL_R_REL="$(URL_R)/releases"
 VERSION1=0
-VERSION2=2
+VERSION2=3
 VERSION3=0
 LICENSE=AGPL-3
 LICENSE_FULL="GNU Affero General Public License, Version 3"
@@ -42,6 +42,7 @@ DIR_INSTALL_LIB=$(DIR_INSTALL_PREFIX)/lib
 DIR_INSTALL_INC=$(DIR_INSTALL_PREFIX)/include/$(LIB_NAME)
 
 CC=gcc
+CFLAGSI=$(addprefix -I,$(R_INCLUDE_DIR) $(PREFIX)/include /usr/local/include)
 F90C=gfortran
 F90FLAGS=-fPIC -fdefault-real-8 -ffixed-form -O3
 LD=gcc
@@ -69,9 +70,6 @@ INC_UNINSTALL=$(DIR_INSTALL_INC)
 .PHONY: all clean distclean install-lib install-inc install uninstall
 
 all: $(LIB_DPRODUCT)
-
-t:
-	echo $(LIB_O)
 
 $(LIB_CONFIG):
 	@echo "#ifndef _HEADER_LIB_CONFIG_AUTO_H_" > $@
@@ -144,7 +142,7 @@ Makefile.flags:
 	gver=$$($(CC) --version) ; \
 	t1=$$(echo "$$gver" | grep -io gcc); \
 	if ! [ -n "$$t1" ]; then echo "Invalid GCC version. Please download the latest GCC."; exit 1; fi
-	@cflags="$(CFLAGS) $(CFLAGS_EXTRA) -I$(PREFIX)/include -I/usr/local/include -fopenmp -ggdb -fPIC -Wall -Wextra -Wconversion -Wsign-conversion -Wundef -Wendif-labels -std=c99 -pedantic-errors $(OPTFLAGS)"; \
+	@cflags="$(CFLAGS) $(CFLAGS_EXTRA) $(CFLAGSI) -fopenmp -ggdb -fPIC -Wall -Wextra -Wconversion -Wsign-conversion -Wundef -Wendif-labels -std=c99 -pedantic-errors $(OPTFLAGS)"; \
 	ldflags="$(LDFLAGS) -L$(PREFIX)/lib -L/usr/local/lib -L/usr/lib -fopenmp -lm -shared"; \
 	echo "Testing Windows"; \
 	gver=$$($(CC) --version) ; \

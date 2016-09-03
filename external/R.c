@@ -44,10 +44,10 @@ void external_R_lib_version(const char** ans)
 	*ans=lib_version();
 }
 
-void external_R_pijs_gassist_any(const int *ng,const int *nt,const int *ns,const int* g,const double* t,const double* t2,double* p1,double* p2b,double* p2c,double* p3,const int* nv,const int* nodiag,int *ret,int (*func)(const MATRIXG*,const MATRIXF*,const MATRIXF*,VECTORF*,MATRIXF*,MATRIXF*,MATRIXF*,size_t,char))
+void external_R_pijs_gassist_any(const int *ng,const int *nt,const int *ns,const int* g,const double* t,const double* t2,double* p1,double* p2,double* p3,double* p4,double* p5,const int* nv,const int* nodiag,int *ret,int (*func)(const MATRIXG*,const MATRIXF*,const MATRIXF*,VECTORF*,MATRIXF*,MATRIXF*,MATRIXF*,MATRIXF*,size_t,char))
 {
 #define	CLEANUP	CLEANMATG(mg)CLEANMATF(mt)CLEANMATF(mt2)CLEANVECF(vp1)\
-				CLEANMATF(mp2b)CLEANMATF(mp2c)CLEANMATF(mp3)
+				CLEANMATF(mp2)CLEANMATF(mp3)CLEANMATF(mp4)CLEANMATF(mp5)
 	size_t	i,j;
 	char	nd=(char)(*nodiag);
 	size_t	ngv,ntv,nsv,nvv;
@@ -56,7 +56,7 @@ void external_R_pijs_gassist_any(const int *ng,const int *nt,const int *ns,const
 	nsv=(size_t)*ns;
 	nvv=(size_t)*nv;
 	MATRIXG *mg;
-	MATRIXF	*mt,*mt2,*mp2b,*mp2c,*mp3;
+	MATRIXF	*mt,*mt2,*mp2,*mp3,*mp4,*mp5;
 	VECTORF	*vp1;
 	
 	//Construct GTYPE matrix for g
@@ -64,10 +64,11 @@ void external_R_pijs_gassist_any(const int *ng,const int *nt,const int *ns,const
 	mt=MATRIXFF(alloc)(ngv,nsv);
 	mt2=MATRIXFF(alloc)(ntv,nsv);
 	vp1=VECTORFF(alloc)(ngv);
-	mp2b=MATRIXFF(alloc)(ngv,ntv);
-	mp2c=MATRIXFF(alloc)(ngv,ntv);
+	mp2=MATRIXFF(alloc)(ngv,ntv);
 	mp3=MATRIXFF(alloc)(ngv,ntv);
-	if(!(mg&&mt&&mt2&&vp1&&mp2b&&mp2c&&mp3))
+	mp4=MATRIXFF(alloc)(ngv,ntv);
+	mp5=MATRIXFF(alloc)(ngv,ntv);
+	if(!(mg&&mt&&mt2&&vp1&&mp2&&mp3&&mp4&&mp5))
 	{
 		LOG(1,"Not enough memory.")
 		CLEANUP
@@ -87,7 +88,7 @@ void external_R_pijs_gassist_any(const int *ng,const int *nt,const int *ns,const
 			MATRIXFF(set)(mt2,i,j,(FTYPE)(t2[j*ntv+i]));
 	
 	//Calculation
-	*ret=func(mg,mt,mt2,vp1,mp2b,mp2c,mp3,nvv,nd);
+	*ret=func(mg,mt,mt2,vp1,mp2,mp3,mp4,mp5,nvv,nd);
 	//Copy data back
 	if(!*ret)
 	{
@@ -96,9 +97,10 @@ void external_R_pijs_gassist_any(const int *ng,const int *nt,const int *ns,const
 			p1[i]=(double)VECTORFF(get)(vp1,i);
 			for(j=0;j<ntv;j++)
 			{
-				p2b[j*ngv+i]=(double)MATRIXFF(get)(mp2b,i,j);
-				p2c[j*ngv+i]=(double)MATRIXFF(get)(mp2c,i,j);
+				p2[j*ngv+i]=(double)MATRIXFF(get)(mp2,i,j);
 				p3[j*ngv+i]=(double)MATRIXFF(get)(mp3,i,j);
+				p4[j*ngv+i]=(double)MATRIXFF(get)(mp4,i,j);
+				p5[j*ngv+i]=(double)MATRIXFF(get)(mp5,i,j);
 			}
 		}
 	}
@@ -107,14 +109,75 @@ void external_R_pijs_gassist_any(const int *ng,const int *nt,const int *ns,const
 }
 
 
-void external_R_pijs_gassist_a(const int *ng,const int *nt,const int *ns,const int* g,const double* t,const double* t2,double* p1,double* p2b,double* p2c,double* p3,const int* nv,const int* nodiag,int *ret)
+void external_R_pijs_gassist_a(const int *ng,const int *nt,const int *ns,const int* g,const double* t,const double* t2,double* p1,double* p2,double* p3,double* p4,double* p5,const int* nv,const int* nodiag,int *ret)
 {
-	external_R_pijs_gassist_any(ng,nt,ns,g,t,t2,p1,p2b,p2c,p3,nv,nodiag,ret,pijs_gassist_a);
+	external_R_pijs_gassist_any(ng,nt,ns,g,t,t2,p1,p2,p3,p4,p5,nv,nodiag,ret,pijs_gassist_a);
 }
 
-void external_R_pijs_gassist_tot(const int *ng,const int *nt,const int *ns,const int* g,const double* t,const double* t2,double* p1,double* p2b,double* p2c,double* p3,const int* nv,const int* nodiag,int *ret)
+void external_R_pijs_gassist_tot(const int *ng,const int *nt,const int *ns,const int* g,const double* t,const double* t2,double* p1,double* p2,double* p3,double* p4,double* p5,const int* nv,const int* nodiag,int *ret)
 {
-	external_R_pijs_gassist_any(ng,nt,ns,g,t,t2,p1,p2b,p2c,p3,nv,nodiag,ret,pijs_gassist_tot);
+	external_R_pijs_gassist_any(ng,nt,ns,g,t,t2,p1,p2,p3,p4,p5,nv,nodiag,ret,pijs_gassist_tot);
+}
+
+void external_R_pij_gassist_any(const int *ng,const int *nt,const int *ns,const int* g,const double* t,const double* t2,double* p,const int* nv,const int* nodiag,int *ret,int (*func)(const MATRIXG*,const MATRIXF*,const MATRIXF*,MATRIXF*,size_t,char))
+{
+#define	CLEANUP	CLEANMATG(mg)CLEANMATF(mt)CLEANMATF(mt2)CLEANMATF(mp)
+	size_t	i,j;
+	char	nd=(char)(*nodiag);
+	size_t	ngv,ntv,nsv,nvv;
+	ngv=(size_t)*ng;
+	ntv=(size_t)*nt;
+	nsv=(size_t)*ns;
+	nvv=(size_t)*nv;
+	MATRIXG *mg;
+	MATRIXF	*mt,*mt2,*mp;
+	
+	//Construct GTYPE matrix for g
+	mg=MATRIXGF(alloc)(ngv,nsv);
+	mt=MATRIXFF(alloc)(ngv,nsv);
+	mt2=MATRIXFF(alloc)(ntv,nsv);
+	mp=MATRIXFF(alloc)(ngv,ntv);
+	if(!(mg&&mt&&mt2&&mp))
+	{
+		LOG(1,"Not enough memory.")
+		CLEANUP
+		*ret=1;
+		return;
+	}
+	
+	//Copy data, R uses column major
+	for(i=0;i<ngv;i++)
+		for(j=0;j<nsv;j++)
+		{
+			MATRIXGF(set)(mg,i,j,(GTYPE)(g[j*ngv+i]));
+			MATRIXFF(set)(mt,i,j,(FTYPE)(t[j*ngv+i]));
+		}	
+	for(i=0;i<ntv;i++)
+		for(j=0;j<nsv;j++)
+			MATRIXFF(set)(mt2,i,j,(FTYPE)(t2[j*ntv+i]));
+	
+	//Calculation
+	*ret=func(mg,mt,mt2,mp,nvv,nd);
+	//Copy data back
+	if(!*ret)
+	{
+		for(i=0;i<ngv;i++)
+			for(j=0;j<ntv;j++)
+				p[j*ngv+i]=(double)MATRIXFF(get)(mp,i,j);
+	}
+	CLEANUP
+#undef CLEANUP
+}
+
+
+void external_R_pij_gassist_a(const int *ng,const int *nt,const int *ns,const int* g,const double* t,const double* t2,double* p,const int* nv,const int* nodiag,int *ret)
+{
+	external_R_pij_gassist_any(ng,nt,ns,g,t,t2,p,nv,nodiag,ret,pij_gassist_a);
+}
+
+void external_R_pij_gassist_tot(const int *ng,const int *nt,const int *ns,const int* g,const double* t,const double* t2,double* p,const int* nv,const int* nodiag,int *ret)
+{
+	external_R_pij_gassist_any(ng,nt,ns,g,t,t2,p,nv,nodiag,ret,pij_gassist_tot);
 }
 
 void external_R_pij_rank_a(const int *ng,const int *nt,const int *ns,const double* t,const double* t2,double* p,const int* nodiag,int *ret)

@@ -1,0 +1,3 @@
+0.3.0:
+	Function pijs_gassist_*: changed function definition to provide latest test statistics.
+	Function pij_gassist_*: added new funciton for recommended combination of tests.

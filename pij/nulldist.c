@@ -57,31 +57,31 @@ void pij_nulldist_pdfs(const VECTORD* loc,VECTORD* ans,const void* param)
 		VECTORDF(set)(ans,i,exp(VECTORDF(get)(ans,i)));
 }
 
-void pij_nulldist_calcpdf_buffed(size_t nsubmin,size_t nsubmax,size_t ntot,const VECTORD* loc,MATRIXD* ans,VECTORD* vb2)
+void pij_nulldist_calcpdf_buffed(long n1c,size_t n1d,long n2c,size_t n2d,const VECTORD* loc,MATRIXD* ans,VECTORD* vb2)
 {
 	size_t	nd=loc->size;
 	size_t	i,j;
 	
+	assert(n1d&&n2d);
 	assert(nd&&(ans->size2==nd)&&(vb2->size==nd));
-	assert((ntot>=nsubmax));
-	
-	//Calculate vb2=x+0.5*log(1-exp(-2x))
+	//Calculate vb2=log(1-exp(-2x))
 	VECTORDF(memcpy)(vb2,loc);
 	VECTORDF(scale)(vb2,-2);
 	for(i=0;i<nd;i++)
 		VECTORDF(set)(vb2,i,log(-math_sf_expminusone(VECTORDF(get)(vb2,i))));
-	VECTORDF(scale)(vb2,0.5);
-	VECTORDF(add)(vb2,loc);
 	
 	//Calculate ans[0] without nv-dependent coefficients
-	//ans[0]=-(ntot-nsubmin)*x+(nsubmin/2-1)*log(1-exp(-2x))+log(2*Gamma(ntot/2))
+	//ans[0]=-n2d*x+(n1d/2-1)*log(1-exp(-2x))
 	{
 		VECTORDF(view) vv=MATRIXDF(row)(ans,0);
 		VECTORDF(memcpy)(&vv.vector,loc);
-		VECTORDF(scale)(&vv.vector,2.-(double)ntot);
-		gsl_blas_daxpy(((double)nsubmin)-2,vb2,&vv.vector);
-		VECTORDF(add_constant)(&vv.vector,(FTYPE)(M_LN2+math_sf_lngammahalf(ntot)));
+		VECTORDF(scale)(&vv.vector,-(double)n2d);
+		gsl_blas_daxpy((double)n1d/2.-1,vb2,&vv.vector);
 	}
+
+	//Calculate vb2=0.5*n1c*log(1-exp(-2x))+x*n2c
+	VECTORDF(scale)(vb2,0.5*(double)n1c);
+	gsl_blas_daxpy((double)n2c,loc,vb2);
 
 	//Calculate ans[i] without nv-dependent coefficients
 	for(i=1;i<ans->size1;i++)
@@ -91,12 +91,12 @@ void pij_nulldist_calcpdf_buffed(size_t nsubmin,size_t nsubmax,size_t ntot,const
 		VECTORDF(memcpy)(&vv2.vector,&vv1.vector);
 		VECTORDF(add)(&vv2.vector,vb2);
 	}
-	
+
 	//Include nv-dependent coefficients
 	for(i=0;i<ans->size1;i++)
 	{
 		VECTORDF(view) vv=MATRIXDF(row)(ans,i);
-		VECTORDF(add_constant)(&vv.vector,(FTYPE)(-math_sf_lngammahalf(i+nsubmin)-math_sf_lngammahalf(ntot-nsubmin-i)));
+		VECTORDF(add_constant)(&vv.vector,(FTYPE)(M_LN2+math_sf_lngammahalf((size_t)((long)i*(n1c-n2c)+(long)(n1d+n2d)))-math_sf_lngammahalf((size_t)((long)i*n1c+(long)n1d))-math_sf_lngammahalf((size_t)(-(long)i*n2c+(long)n2d))));
 	}
 	//Convert log pdf to pdf
 	for(i=0;i<ans->size1;i++)
@@ -104,14 +104,13 @@ void pij_nulldist_calcpdf_buffed(size_t nsubmin,size_t nsubmax,size_t ntot,const
 			MATRIXDF(set)(ans,i,j,exp(MATRIXDF(get)(ans,i,j)));
 }
 
-
-int pij_nulldist_calcpdf(size_t nsubmin,size_t nsubmax,size_t ntot,const VECTORD* loc,MATRIXD* ans)
+static int pij_nulldist_calcpdf(long n1c,size_t n1d,long n2c,size_t n2d,const VECTORD* loc,MATRIXD* ans)
 {
 #define	CLEANUP	AUTOFREEVEC(vb)
 		AUTOALLOCVECD(vb,loc->size,30000)
 		if(!vb)
 			ERRRET("Not enough memory.")
-		pij_nulldist_calcpdf_buffed(nsubmin,nsubmax,ntot,loc,ans,vb);
+		pij_nulldist_calcpdf_buffed(n1c,n1d,n2c,n2d,loc,ans,vb);
 		CLEANUP
 		return 0;
 #undef	CLEANUP
@@ -141,7 +140,7 @@ int pij_nulldist_hist_pdf(const double* restrict range,size_t nbin,double* restr
 	
 	mvv=MATRIXDF(view_vector)(val,1,val->size);
 	//Calculate bin values
-	if(pij_nulldist_calcpdf(n1,n1+1,n1+n2,loc,&mvv.matrix))
+	if(pij_nulldist_calcpdf(0,n1,0,n2,loc,&mvv.matrix))
 	{
 		CLEANUP
 		return 1;

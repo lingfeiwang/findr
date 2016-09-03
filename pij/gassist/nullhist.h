@@ -45,10 +45,10 @@ struct pij_gassist_nullhist_analytical_pdf_param
 
 //Specific interface function for different stages
 int	pij_gassist_nullhist_analytical1_pdf(const void* param,gsl_histogram* h);
-//Shared identical analytical null pdf for conservative step 2
-#define pij_gassist_nullhist_analytical2c_pdf	pij_gassist_nullhist_analytical1_pdf
-int	pij_gassist_nullhist_analytical2b_pdf(const void* param,gsl_histogram* h);
+int	pij_gassist_nullhist_analytical2_pdf(const void* param,gsl_histogram* h);
 int	pij_gassist_nullhist_analytical3_pdf(const void* param,gsl_histogram* h);
+int	pij_gassist_nullhist_analytical4_pdf(const void* param,gsl_histogram* h);
+int	pij_gassist_nullhist_analytical5_pdf(const void* param,gsl_histogram* h);
 
 
 

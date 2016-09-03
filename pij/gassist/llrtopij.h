@@ -36,8 +36,6 @@ extern "C"
  */
 int pij_gassist_llrtopij1_1(VECTORF* p1);
 
-// int pij_gassist_llrtopijs_nv(const MATRIXG* g,const MATRIXF* t,const MATRIXF* t2,const VECTORF* llr1,const MATRIXF* llr2,const MATRIXF* llr3,VECTORF* p1,MATRIXF* p2,MATRIXF* p3,size_t nv,size_t nthread,char nodiag);
-
 
 
 

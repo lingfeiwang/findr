@@ -27,13 +27,17 @@
 #include "nullmodeler.h"
 #pragma GCC diagnostic ignored "-Wunused-parameter"
 
-void* pij_nullmodeler_exp_init_container(const void* d,const void* pm,const gsl_histogram* h)
+static void* pij_nullmodeler_exp_init(const void* c,const void* d,size_t n1,size_t n2);
+
+static void pij_nullmodeler_exp_close(void* m);
+
+static void* pij_nullmodeler_exp_init_container(const void* d,const void* pm,const gsl_histogram* h)
 {
 	//Model container same with modeler
 	return pij_nullmodeler_exp_init(0,d,0,0);
 }
 
-int pij_nullmodeler_exp_output(const void* c,gsl_histogram* h)
+static int pij_nullmodeler_exp_output(const void* c,gsl_histogram* h)
 {
 #define	CLEANUP	AUTOFREEVEC(vwidth)
 	const struct pij_nullmodeler_exp_state* p=c;
@@ -67,12 +71,12 @@ int pij_nullmodeler_exp_output(const void* c,gsl_histogram* h)
 #undef	CLEANUP
 }
 
-void pij_nullmodeler_exp_close_container(void* c)
+static void pij_nullmodeler_exp_close_container(void* c)
 {
 	pij_nullmodeler_exp_close(c);
 }
 
-void* pij_nullmodeler_exp_init(const void* c,const void* d,size_t n1,size_t n2)
+static void* pij_nullmodeler_exp_init(const void* c,const void* d,size_t n1,size_t n2)
 {
 	struct pij_nullmodeler_exp_state* p;
 	MALLOCSIZE(p,1);
@@ -82,14 +86,14 @@ void* pij_nullmodeler_exp_init(const void* c,const void* d,size_t n1,size_t n2)
 	p->v=0;
 	return p;
 }
-void pij_nullmodeler_exp_input(void* m,const VECTORF* data)
+static void pij_nullmodeler_exp_input(void* m,const VECTORF* data)
 {
 	struct pij_nullmodeler_exp_state* p=m;
  	p->v+=BLASF(asum)(data);
 	p->n+=data->size;
 }
 
-void pij_nullmodeler_exp_merge(const void* m,void* c)
+static void pij_nullmodeler_exp_merge(const void* m,void* c)
 {
 	const struct pij_nullmodeler_exp_state* pm=m;
 	struct pij_nullmodeler_exp_state* pc=c;
@@ -97,12 +101,21 @@ void pij_nullmodeler_exp_merge(const void* m,void* c)
 	pc->v+=pm->v;
 }
 
-void pij_nullmodeler_exp_close(void* m)
+static void pij_nullmodeler_exp_close(void* m)
 {
 	if(m)
 		free(m);
 }
 
+const struct pij_nullmodeler pij_nullmodeler_exp={
+	pij_nullmodeler_exp_init_container,
+	pij_nullmodeler_exp_output,
+	pij_nullmodeler_exp_close_container,
+	pij_nullmodeler_exp_init,
+	pij_nullmodeler_exp_input,
+	pij_nullmodeler_exp_merge,
+	pij_nullmodeler_exp_close
+};
 
 
 
@@ -110,7 +123,7 @@ void pij_nullmodeler_exp_close(void* m)
 
 
 
-void* pij_nullmodeler_naive_init_container(const void* d,const void* pm,const gsl_histogram* h)
+static void* pij_nullmodeler_naive_init_container(const void* d,const void* pm,const gsl_histogram* h)
 {
 #define	CLEANUP	if(p){CLEANHIST(p->h)free(p);p=0;}
 	struct pij_nullmodeler_naive_state *p;
@@ -126,7 +139,7 @@ void* pij_nullmodeler_naive_init_container(const void* d,const void* pm,const gs
 #undef	CLEANUP
 }
 
-int pij_nullmodeler_naive_output(const void* c,gsl_histogram* h)
+static int pij_nullmodeler_naive_output(const void* c,gsl_histogram* h)
 {
 	const struct pij_nullmodeler_naive_state* p=c;
 	VECTORDF(view)	vv=VECTORDF(view_array)(h->bin,h->n);
@@ -137,20 +150,20 @@ int pij_nullmodeler_naive_output(const void* c,gsl_histogram* h)
 	return 0;
 }
 
-void pij_nullmodeler_naive_close_container(void* c)
+static void pij_nullmodeler_naive_close_container(void* c)
 {
 	struct pij_nullmodeler_naive_state* p=c;
 	CLEANHIST(p->h)
 	free(p);
 }
 
-void* pij_nullmodeler_naive_init(const void* c,const void* d,size_t n1,size_t n2)
+static void* pij_nullmodeler_naive_init(const void* c,const void* d,size_t n1,size_t n2)
 {
 	const struct pij_nullmodeler_naive_state* p=c;
 	return pij_nullmodeler_naive_init_container(d,0,p->h);
 }
 
-void pij_nullmodeler_naive_input(void* m,const VECTORF* data)
+static void pij_nullmodeler_naive_input(void* m,const VECTORF* data)
 {
 	struct pij_nullmodeler_naive_state* p=m;
 	size_t	i;
@@ -158,23 +171,27 @@ void pij_nullmodeler_naive_input(void* m,const VECTORF* data)
 		gsl_histogram_increment(p->h,VECTORFF(get)(data,i));
 }
 
-void pij_nullmodeler_naive_merge(const void* m,void* c)
+static void pij_nullmodeler_naive_merge(const void* m,void* c)
 {
 	const struct pij_nullmodeler_naive_state* pm=m;
 	struct pij_nullmodeler_naive_state* pc=c;
 	gsl_histogram_add(pc->h,pm->h);
 }
 
-void pij_nullmodeler_naive_close(void* m)
+static void pij_nullmodeler_naive_close(void* m)
 {
 	pij_nullmodeler_naive_close_container(m);
 }
 
-
-
-
-
-
+const struct pij_nullmodeler pij_nullmodeler_naive={
+	pij_nullmodeler_naive_init_container,
+	pij_nullmodeler_naive_output,
+	pij_nullmodeler_naive_close_container,
+	pij_nullmodeler_naive_init,
+	pij_nullmodeler_naive_input,
+	pij_nullmodeler_naive_merge,
+	pij_nullmodeler_naive_close
+};
 
 
 

@@ -38,11 +38,11 @@ int	pij_gassist_nullhist_analytical1_pdf(const void* param,gsl_histogram* h)
 	return pij_nullhist_analytical_pdf(&p3,h);
 }
 
-int	pij_gassist_nullhist_analytical2b_pdf(const void* param,gsl_histogram* h)
+int	pij_gassist_nullhist_analytical2_pdf(const void* param,gsl_histogram* h)
 {
 	const struct pij_gassist_nullhist_analytical_pdf_param	*p=param;
 	const struct pij_gassist_nulldist_mixed_pdf_data		p2={p->g,p->nv};
-	const struct pij_nullhist_analytical_pdf_param			p3={p->nsplit,pij_gassist_nulldist2b_mixed_pdf,&p2};
+	const struct pij_nullhist_analytical_pdf_param			p3={p->nsplit,pij_gassist_nulldist2_mixed_pdf,&p2};
 	
 	return pij_nullhist_analytical_pdf(&p3,h);
 }
@@ -52,6 +52,24 @@ int	pij_gassist_nullhist_analytical3_pdf(const void* param,gsl_histogram* h)
 	const struct pij_gassist_nullhist_analytical_pdf_param	*p=param;
 	const struct pij_gassist_nulldist_mixed_pdf_data		p2={p->g,p->nv};
 	const struct pij_nullhist_analytical_pdf_param			p3={p->nsplit,pij_gassist_nulldist3_mixed_pdf,&p2};
+	
+	return pij_nullhist_analytical_pdf(&p3,h);
+}
+
+int	pij_gassist_nullhist_analytical4_pdf(const void* param,gsl_histogram* h)
+{
+	const struct pij_gassist_nullhist_analytical_pdf_param	*p=param;
+	const struct pij_gassist_nulldist_mixed_pdf_data		p2={p->g,p->nv};
+	const struct pij_nullhist_analytical_pdf_param			p3={p->nsplit,pij_gassist_nulldist4_mixed_pdf,&p2};
+	
+	return pij_nullhist_analytical_pdf(&p3,h);
+}
+
+int	pij_gassist_nullhist_analytical5_pdf(const void* param,gsl_histogram* h)
+{
+	const struct pij_gassist_nullhist_analytical_pdf_param	*p=param;
+	const struct pij_gassist_nulldist_mixed_pdf_data		p2={p->g,p->nv};
+	const struct pij_nullhist_analytical_pdf_param			p3={p->nsplit,pij_gassist_nulldist5_mixed_pdf,&p2};
 	
 	return pij_nullhist_analytical_pdf(&p3,h);
 }

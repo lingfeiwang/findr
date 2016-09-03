@@ -29,53 +29,6 @@ extern "C"
 {
 #endif
 
-/* Smoothen true ratio histogram to make it monotonically increasing
- * Method:	1.	Construct increasing upper bound histogram (hup)
- * 				so every bin is max(self,left neighbor of self)
- * 			2.	Construct increasing lower bound histogram (hlow)
- * 				so every bin is min(self,right neighbor of self)
- * 			3.	Return (hup+hlow)/2
- * h:		[n] double histogram to be smoothened
- * 			Input as histogram of true ratio and,
- * 			output as smoothened histogram of true ratio
- * n:		size of histogram
- * Return:	0 on success.
- */
-int pij_llrtopij_histogram_force_incremental(gsl_histogram *h);
-
-/* Smoothen 1D histogram with buffer provided as the following:
- * 1. Calculate bin differences.
- * 2. Extrapolates with fixed boundary values to ensure same size of histogram
- * 3. Convolution with Gaussian filter.
- * 4. Calculate cumulative sum
- * 5. Scale and shift to original head-tail positions
- * WARNING:	Gaussian filter applied using bin index as distance measure,
- * 			not the actual histogram range.
- * h:		[n] double histogram to be smoothened
- * n:		size of histogram
- * sigma:	sigma of Gaussian filter
- * ncut:	size of Gaussian convolution vector is 2*ncut+1
- * vlarge:	[n+2*ncut-1] Buffer for data before convolution
- * vconv:	[2*ncut+1] Buffer for convolution mask.
- * Return:	0 on success
- */
-void pij_llrtopij_histogram_smoothen_buffed(gsl_histogram *h,double sigma,size_t ncut,VECTORD *vlarge,VECTORD *vconv);
-// Smoothen 1D histogram with self allocated buffer
-int pij_llrtopij_histogram_smoothen(gsl_histogram *h,double sigma,size_t ncut);
-
-/* Construct central value histogram from bounded histogram for interpolation.
- * In central value histogram, bin[i] is the value at range[i].
- * h:		(nbin) Input bounded histogram
- * hc:		(nbin+2) Output central value histogram
- */
-void pij_llrtopij_histogram_to_central(const gsl_histogram *h,gsl_histogram* hc);
-
-/* Construct central value histogram from bounded histogram for interpolation.
- * Uses pij_gassist_llrtopij_histogram_to_central.
- * h:		(nbin) Input bounded histogram
- * Return:	(nbin+2) Output central value histogram
- */
-gsl_histogram* pij_llrtopij_histogram_central_from(const gsl_histogram *h);
 
 /* Use central histogram to estimate distribution probabilities of any point
  * within the histogram range. Linear intepolation is used.

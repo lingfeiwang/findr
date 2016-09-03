@@ -54,20 +54,22 @@ struct pij_nulldist_pdfs_param
  */
 void pij_nulldist_pdfs(const VECTORD* loc,VECTORD* ans,const void* param);
 
+
 /* Calculate the pdf p(x|i) for x=-0.5*log(1-z1_i/(z1_i+z2_i)),
- * where z1_i ~ chi2(i), z2_i~chi2(ntot-i), i=nsubmin,...,nsubmax-1.
- * p(x|i)=2*(1-exp(-2*x))^((i-2)/2)*exp((i-ntot)*x)*Gamma(ntot/2)
- * 			/(Gamma(i/2)*Gamma((ntot-i)/2)).
+ * where z1_i ~ chi2(i*n1c+n1d), z2_i~chi2(-i*n2c+n2d), i=0,...,nmax-1.
+ * p(x|i)=2*(1-exp(-2*x))^((i*n1c+n1d-2)/2)*exp((i*n2c-n2d)*x)*Gamma((i*(n1c-n2c)+n1d+n2d)/2)/(Gamma((i*n1c+n1d)/2)*Gamma((-i*n2c+n2d)/2)).
  * Buffer is provided.
- * nsubmin,
- * nsubmax,
- * ntot:		As indicated in equation.
- * loc:			(nd) Locations of x to calculate p(x|i).
- * ans:			(nsubmax-nsubmin,nd) Calculated p(x|i). ans[j,k]=p(loc[k]|i=nsubmin+j).
- * vb2:			(nd) Buffer. =log(1-exp(-2x))/2+x
- * nd:			loc->size
+ * n1c,
+ * n1d,
+ * n2c,
+ * n2d,
+ * nmax:	As indicated in equation.
+ * loc:		(nd) Locations of x to calculate p(x|i).
+ * ans:		(nmax,nd) Calculated p(x|i). ans[j,k]=p(loc[k]|i=nsubmin+j).
+ * vb2:		(nd) Buffer. =log(1-exp(-2x))*n1c/2+x*n2c
+ * nd:		loc->size
  */
-void pij_nulldist_calcpdf_buffed(size_t nsubmin,size_t nsubmax,size_t ntot,const VECTORD* loc,MATRIXD* ans,VECTORD* vb2);
+void pij_nulldist_calcpdf_buffed(long n1c,size_t n1d,long n2c,size_t n2d,const VECTORD* loc,MATRIXD* ans,VECTORD* vb2);
 
 /* Calculate density histogram of null distribution based on pdf function.
  * This uses interpolation within each bin, similarly with pij_nulldist_nullhist_pdf.

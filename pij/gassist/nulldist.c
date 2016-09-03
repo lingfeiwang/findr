@@ -37,10 +37,29 @@
 
 /*************************************************************
  * Generic functions for any step
+ * 
+ * Mixture distributions of LLR for any step at specific locations.
+ * The distribution is a mixture one because different genotype locations
+ * can have different number
+ * of values observed, yielding to different analytical distributions of LLR.
  *************************************************************/
 
-
-void pij_gassist_nulldist_mixed_pdf_buffed(const MATRIXG* g,size_t nv,const VECTORD* loc,VECTORD* ans,VECTORD* vb2,VECTORG* vb3,VECTORD* vb4,VECTORUC* vb5,MATRIXD* mb1,void (*func)(size_t,size_t,const VECTORD*,MATRIXD*,VECTORD*))
+/* Calculate log total mixture pdf of LLR for any step at specific locations with buffer provided.
+ * The distribution is a mixture one because different genotype locations can have different number
+ * of values observed, yielding to different analytical distributions of LLR.
+ * Specify function for different steps.
+ * g:	(ng,ns) Genotype data
+ * nv:	Number of values each genotype can take
+ * loc:	(nd) Locations of LLR of current step, where log pdf will be calculated
+ * ans:	(nd) Output for log pdf calculated.
+ * vb2:	(nd) Buffer
+ * vb3:	(ng) Buffer
+ * vb4:	(nv+1) Buffer
+ * mb1:	(nv-1,nd) Saves pdf before summing up w.r.t nv.
+ * nd:	loc->size
+ * func:Function to calculate pdf buffed (e.g. pij_nulldist1_calcpdf_buffed or pij_nulldist3_calcpdf_buffed)
+ */
+static void pij_gassist_nulldist_mixed_pdf_buffed(const MATRIXG* g,size_t nv,const VECTORD* loc,VECTORD* ans,VECTORD* vb2,VECTORG* vb3,VECTORD* vb4,VECTORUC* vb5,MATRIXD* mb1,void (*func)(size_t,size_t,const VECTORD*,MATRIXD*,VECTORD*))
 {
 	size_t	ns=g->size2;
 
@@ -62,7 +81,16 @@ void pij_gassist_nulldist_mixed_pdf_buffed(const MATRIXG* g,size_t nv,const VECT
 	gsl_blas_dgemv(CblasTrans,1/(1-VECTORDF(get)(vb4,1)),mb1,&vvc.vector,0,ans);
 }
 
-int pij_gassist_nulldist_mixed_pdf(const MATRIXG* g,size_t nv,const VECTORD* loc,VECTORD* ans,void (*func)(size_t,size_t,const VECTORD*,MATRIXD*,VECTORD*))
+/* Calculate log pdf of LLR for any step at specific locations.
+ * g:	(ng,ns) Genotype data
+ * nv:	Number of values each genotype can take
+ * loc:	(nd) Locations of LLR of current step, where log pdf will be calculated
+ * ans:	(nd) Output for log pdf calculated.
+ * nd:	loc->size
+ * func:Function to calculate pdf buffed (e.g. pij_nulldist1_calcpdf_buffed or pij_nulldist3_calcpdf_buffed)
+ * Return:	0 on success.
+ */
+static int pij_gassist_nulldist_mixed_pdf(const MATRIXG* g,size_t nv,const VECTORD* loc,VECTORD* ans,void (*func)(size_t,size_t,const VECTORD*,MATRIXD*,VECTORD*))
 {
 #define CLEANUP	AUTOFREEVEC(vb2)AUTOFREEVEC(vb4)AUTOFREEVEC(vb4)
 	size_t		ng=g->size1,nd=loc->size;
@@ -82,7 +110,19 @@ int pij_gassist_nulldist_mixed_pdf(const MATRIXG* g,size_t nv,const VECTORD* loc
 #undef	CLEANUP
 }
 
-int pij_gassist_nulldist_nullhist_mixed_pdf0(const MATRIXG* g,size_t nv,const double* restrict range,size_t nbin,double* restrict hist,void* param,void (*func)(size_t,size_t,const VECTORD*,MATRIXD*,VECTORD*))
+/* Calculates density histogram of null distribution of log likelihood ratio.
+ * Is a pij_allrtopij_nullhist_method (see pij_allrtopij.h).
+ * Method is to use central pdf value as the density.
+ * g:		(ng,ns) Genotype data
+ * nv:		Number of values each genotype can take
+ * range:	(nbin+1) Bin boundary values
+ * nbin:	Number of bins
+ * hist:	(nbin) Output array for density histogram.
+ * param:	Redundant, must be 0.
+ * func:	Function to calculate pdf buffed (e.g. pij_nulldist1_calcpdf_buffed or pij_nulldist3_calcpdf_buffed)
+ * Return:	0 on success.
+ */
+static int pij_gassist_nulldist_nullhist_mixed_pdf0(const MATRIXG* g,size_t nv,const double* restrict range,size_t nbin,double* restrict hist,void* param,void (*func)(size_t,size_t,const VECTORD*,MATRIXD*,VECTORD*))
 {
 #define CLEANUP	AUTOFREEVEC(vloc)
 	int	ret;
@@ -108,7 +148,18 @@ int pij_gassist_nulldist_nullhist_mixed_pdf0(const MATRIXG* g,size_t nv,const do
 #undef	CLEANUP
 }
 
-int pij_gassist_nulldist_nullhist_mixed_pdf(const MATRIXG* g,size_t nv,const double* restrict range,size_t nbin,double* restrict hist,void* param,void (*func)(size_t,size_t,const VECTORD*,MATRIXD*,VECTORD*))
+/* Calculates density histogram of null distribution of log likelihood ratio.
+ * Method is to use central pdf value as the density.
+ * g:	(ng,ns) Genotype data
+ * nv:	Number of values each genotype can take
+ * range:	(nbin+1) Bin boundary values
+ * nbin:	Number of bins
+ * hist:	(nbin) Output array for density histogram.
+ * param:	Redundant, must be 0.
+ * func:	Function to calculate pdf buffed (e.g. pij_nulldist1_calcpdf_buffed or pij_nulldist3_calcpdf_buffed)
+ * Return:	0 on success.
+ */
+static int pij_gassist_nulldist_nullhist_mixed_pdf(const MATRIXG* g,size_t nv,const double* restrict range,size_t nbin,double* restrict hist,void* param,void (*func)(size_t,size_t,const VECTORD*,MATRIXD*,VECTORD*))
 {
 #define CLEANUP	CLEANVECD(loc)CLEANVECD(val)
 	VECTORD	*loc,*val;
@@ -160,17 +211,27 @@ int pij_gassist_nulldist_nullhist_mixed_pdf(const MATRIXG* g,size_t nv,const dou
 
 void pij_gassist_nulldist1_calcpdf_buffed(size_t ns,size_t nv,const VECTORD* loc,MATRIXD* ans,VECTORD* vb2)
 {
-	pij_nulldist_calcpdf_buffed(1,nv,ns-1,loc,ans,vb2);
+	pij_nulldist_calcpdf_buffed(1,1,1,ns-2,loc,ans,vb2);
 }
 
-void pij_gassist_nulldist2b_calcpdf_buffed(size_t ns,size_t nv,const VECTORD* loc,MATRIXD* ans,VECTORD* vb2)
+void pij_gassist_nulldist2_calcpdf_buffed(size_t ns,size_t nv,const VECTORD* loc,MATRIXD* ans,VECTORD* vb2)
 {
- 	pij_nulldist_calcpdf_buffed(2,nv+1,ns-1,loc,ans,vb2);
+	pij_nulldist_calcpdf_buffed(1,1,1,ns-2,loc,ans,vb2);
 }
 
 void pij_gassist_nulldist3_calcpdf_buffed(size_t ns,size_t nv,const VECTORD* loc,MATRIXD* ans,VECTORD* vb2)
 {
-	pij_nulldist_calcpdf_buffed(1,nv,ns-2,loc,ans,vb2);
+	pij_nulldist_calcpdf_buffed(1,1,1,ns-3,loc,ans,vb2);
+}
+
+void pij_gassist_nulldist4_calcpdf_buffed(size_t ns,size_t nv,const VECTORD* loc,MATRIXD* ans,VECTORD* vb2)
+{
+ 	pij_nulldist_calcpdf_buffed(2,1,1,ns-2,loc,ans,vb2);
+}
+
+void pij_gassist_nulldist5_calcpdf_buffed(size_t ns,size_t nv,const VECTORD* loc,MATRIXD* ans,VECTORD* vb2)
+{
+ 	pij_nulldist_calcpdf_buffed(0,1,1,ns-3,loc,ans,vb2);
 }
 
 int pij_gassist_nulldist1_mixed_pdf(const VECTORD* loc,VECTORD* ans,const void* param)
@@ -179,10 +240,10 @@ int pij_gassist_nulldist1_mixed_pdf(const VECTORD* loc,VECTORD* ans,const void* 
 	return pij_gassist_nulldist_mixed_pdf(p->g,p->nv,loc,ans,pij_gassist_nulldist1_calcpdf_buffed);
 }
 
-int pij_gassist_nulldist2b_mixed_pdf(const VECTORD* loc,VECTORD* ans,const void* param)
+int pij_gassist_nulldist2_mixed_pdf(const VECTORD* loc,VECTORD* ans,const void* param)
 {
 	const struct pij_gassist_nulldist_mixed_pdf_data	*p=param;
-	return pij_gassist_nulldist_mixed_pdf(p->g,p->nv,loc,ans,pij_gassist_nulldist2b_calcpdf_buffed);
+	return pij_gassist_nulldist_mixed_pdf(p->g,p->nv,loc,ans,pij_gassist_nulldist2_calcpdf_buffed);
 }
 
 int pij_gassist_nulldist3_mixed_pdf(const VECTORD* loc,VECTORD* ans,const void* param)
@@ -191,19 +252,41 @@ int pij_gassist_nulldist3_mixed_pdf(const VECTORD* loc,VECTORD* ans,const void* 
 	return pij_gassist_nulldist_mixed_pdf(p->g,p->nv,loc,ans,pij_gassist_nulldist3_calcpdf_buffed);
 }
 
+int pij_gassist_nulldist4_mixed_pdf(const VECTORD* loc,VECTORD* ans,const void* param)
+{
+	const struct pij_gassist_nulldist_mixed_pdf_data	*p=param;
+	return pij_gassist_nulldist_mixed_pdf(p->g,p->nv,loc,ans,pij_gassist_nulldist4_calcpdf_buffed);
+}
+
+int pij_gassist_nulldist5_mixed_pdf(const VECTORD* loc,VECTORD* ans,const void* param)
+{
+	const struct pij_gassist_nulldist_mixed_pdf_data	*p=param;
+	return pij_gassist_nulldist_mixed_pdf(p->g,p->nv,loc,ans,pij_gassist_nulldist5_calcpdf_buffed);
+}
+
 int pij_gassist_nulldist_nullhist1_pdf(const MATRIXG* g,size_t nv,const double* restrict range,size_t nbin,double* restrict hist,void* param)
 {
 	return pij_gassist_nulldist_nullhist_mixed_pdf(g,nv,range,nbin,hist,param,pij_gassist_nulldist1_calcpdf_buffed);
 }
 
-int pij_gassist_nulldist_nullhist2b_mixed_pdf(const MATRIXG* g,size_t nv,const double* restrict range,size_t nbin,double* restrict hist,void* param)
+int pij_gassist_nulldist_nullhist2_mixed_pdf(const MATRIXG* g,size_t nv,const double* restrict range,size_t nbin,double* restrict hist,void* param)
 {
-	return pij_gassist_nulldist_nullhist_mixed_pdf(g,nv,range,nbin,hist,param,pij_gassist_nulldist2b_calcpdf_buffed);
+	return pij_gassist_nulldist_nullhist_mixed_pdf(g,nv,range,nbin,hist,param,pij_gassist_nulldist2_calcpdf_buffed);
 }
 
 int pij_gassist_nulldist_nullhist3_mixed_pdf(const MATRIXG* g,size_t nv,const double* restrict range,size_t nbin,double* restrict hist,void* param)
 {
 	return pij_gassist_nulldist_nullhist_mixed_pdf(g,nv,range,nbin,hist,param,pij_gassist_nulldist3_calcpdf_buffed);
+}
+
+int pij_gassist_nulldist_nullhist4_mixed_pdf(const MATRIXG* g,size_t nv,const double* restrict range,size_t nbin,double* restrict hist,void* param)
+{
+	return pij_gassist_nulldist_nullhist_mixed_pdf(g,nv,range,nbin,hist,param,pij_gassist_nulldist4_calcpdf_buffed);
+}
+
+int pij_gassist_nulldist_nullhist5_mixed_pdf(const MATRIXG* g,size_t nv,const double* restrict range,size_t nbin,double* restrict hist,void* param)
+{
+	return pij_gassist_nulldist_nullhist_mixed_pdf(g,nv,range,nbin,hist,param,pij_gassist_nulldist5_calcpdf_buffed);
 }
 
 

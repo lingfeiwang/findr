@@ -32,13 +32,13 @@
 #include "llrtopij.h"
 #pragma GCC diagnostic ignored "-Wunused-parameter"
 
-int pij_gassist_llrtopij_a_convert(const MATRIXF* d,const MATRIXF* dconv,MATRIXF* ans,const MATRIXG* g,size_t nv,long n1d,long n2d,char nodiag)
+int pij_gassist_llrtopij_a_convert(const MATRIXF* d,const MATRIXF* dconv,MATRIXF* ans,const MATRIXG* g,size_t nv,long n1c,size_t n1d,long n2c,size_t n2d,char nodiag)
 {
 #define	CLEANUP	CLEANVECG(vcount)CLEANHIST(hreal)CLEANHIST(hc)\
 				if(h){for(i=0;i<nv-1;i++)CLEANHIST(h[i])free(h);h=0;}\
 				CLEANVECD(vb1)CLEANVECD(vb2)
 	VECTORG		*vcount;
-	size_t		ng=g->size1,ns=g->size2;
+	size_t		ng=g->size1;
 	size_t		i,j,k,nbin;
 	gsl_histogram **h,*hreal,*hc;
 	VECTORD		*vb1,*vb2;
@@ -57,7 +57,7 @@ int pij_gassist_llrtopij_a_convert(const MATRIXF* d,const MATRIXF* dconv,MATRIXF
 		MATRIXFF(minmax)(d,&dmin,&dmax);
 		if((!(dmin>=0))||gsl_isnan(dmax)||gsl_isinf(dmax))
 			ERRRET("Negative or NAN found in input data. It may invalidate follow up analysis. This may be due to incorrect previous steps.")
-		h=pij_llrtopij_a_nullhist((double)dmax,nv,ns,d->size2,n1d,n2d);
+		h=pij_llrtopij_a_nullhist((double)dmax,nv,d->size2,n1c,n1d,n2c,n2d);
 		if(!h)
 			ERRRET("pij_llrtopij_a_nullhist failed.")
 		nbin=h[0]->n;
@@ -138,34 +138,26 @@ int pij_gassist_llrtopij_a_convert(const MATRIXF* d,const MATRIXF* dconv,MATRIXF
 #undef	CLEANUP
 }
 
-int pij_gassist_llrtopijs_a(const MATRIXG* g,const VECTORF* llr1,const MATRIXF* llr2b,const MATRIXF* llr2c,const MATRIXF* llr3,VECTORF* p1,MATRIXF* p2b,MATRIXF* p2c,MATRIXF* p3,size_t nv,char nodiag)
+int pij_gassist_llrtopijs_a(const MATRIXG* g,const VECTORF* llr1,const MATRIXF* llr2,const MATRIXF* llr3,const MATRIXF* llr4,const MATRIXF* llr5,VECTORF* p1,MATRIXF* p2,MATRIXF* p3,MATRIXF* p4,MATRIXF* p5,size_t nv,char nodiag)
 {
 	int	ret=0,ret2;
-	ret2=pij_gassist_llrtopij1_1(p1);
-	ret=ret||ret2;
+	ret=ret||(ret2=pij_gassist_llrtopij1_1(p1));
 	if(ret2)
 		LOG(1,"Failed to log likelihood ratios to probabilities in step 1.")
-	ret2=pij_gassist_llrtopij2b_a(llr2b,llr2b,p2b,g,nv,nodiag);
-	ret=ret||ret2;
+	ret=ret||(ret2=pij_gassist_llrtopij2_a(llr2,llr2,p2,g,nv,nodiag));
 	if(ret2)
-		LOG(1,"Failed to log likelihood ratios to probabilities in step 2b.")
-	ret2=pij_gassist_llrtopij2c_a(llr2c,llr2c,p2c,g,nv,nodiag);
-	ret=ret||ret2;
-	if(ret2)
-		LOG(1,"Failed to log likelihood ratios to probabilities in step 2c.")
-	ret2=pij_gassist_llrtopij3_a(llr3,llr3,p3,g,nv,nodiag);
-	ret=ret||ret2;
+		LOG(1,"Failed to log likelihood ratios to probabilities in step 2.")
+	ret=ret||(ret2=pij_gassist_llrtopij3_a(llr3,llr3,p3,g,nv,nodiag));
 	if(ret2)
 		LOG(1,"Failed to log likelihood ratios to probabilities in step 3.")
+	ret=ret||(ret2=pij_gassist_llrtopij4_a(llr4,llr4,p4,g,nv,nodiag));
+	if(ret2)
+		LOG(1,"Failed to log likelihood ratios to probabilities in step 4.")
+	ret=ret||(ret2=pij_gassist_llrtopij5_a(llr5,llr5,p5,g,nv,nodiag));
+	if(ret2)
+		LOG(1,"Failed to log likelihood ratios to probabilities in step 5.")
 	return ret;
 }
-
-
-
-
-
-
-
 
 
 

@@ -20,6 +20,8 @@
 #include <stdio.h>
 #include <math.h>
 #include <tgmath.h>
+#include "gsl/sf.h"
+#include "gsl/math.h"
 #include "types.h"
 #include "logger.h"
 #include "math.h"
@@ -71,3 +73,59 @@ void math_cdf_quantile_calc(double start,double step,size_t n,double left,double
 	}
 }
 
+
+/* This function is modified from  GNU Scientific Library (GSL) version 1.16.
+ * See https://www.gnu.org/software/gsl/.
+ */
+int math_sf_2F1_m1(const double a, const double b, const double c,const double x, gsl_sf_result * result)
+{
+  double sum_pos = 0.0;
+  double sum_neg = 0.0;
+  double del_pos = 0.0;
+  double del_neg = 0.0;
+  double del = 0.0;
+  double k = 0.0;
+  int i = 0;
+
+  if(fabs(c) < GSL_DBL_EPSILON) {
+    result->val = 0.0; /* FIXME: ?? */
+    result->err = 1.0;
+    return 1;
+  }
+
+  do {
+    if(++i > 30000) {
+      result->val  = sum_pos - sum_neg;
+      result->err  = del_pos + del_neg;
+      result->err += 2.0 * GSL_DBL_EPSILON * (sum_pos + sum_neg);
+      result->err += 2.0 * GSL_DBL_EPSILON * (2.0*sqrt(k)+1.0) * fabs(result->val);
+      return 1;
+    }
+    del *= (a+k)*(b+k) * x / ((c+k) * (k+1.0));  /* Gauss series */
+
+    if(del > 0.0) {
+      del_pos  =  del;
+      sum_pos +=  del;
+    }
+    else if(del == 0.0) {
+      /* Exact termination (a or b was a negative integer).
+       */
+      del_pos = 0.0;
+      del_neg = 0.0;
+      break;
+    }
+    else {
+      del_neg  = -del;
+      sum_neg -=  del;
+    }
+
+    k += 1.0;
+  } while(fabs((del_pos + del_neg)/(sum_pos-sum_neg)) > GSL_DBL_EPSILON);
+
+  result->val  = sum_pos - sum_neg;
+  result->err  = del_pos + del_neg;
+  result->err += 2.0 * GSL_DBL_EPSILON * (sum_pos + sum_neg);
+  result->err += 2.0 * GSL_DBL_EPSILON * (2.0*sqrt(k) + 1.0) * fabs(result->val);
+
+  return 0;
+}

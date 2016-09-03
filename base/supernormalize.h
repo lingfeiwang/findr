@@ -25,6 +25,7 @@
 #include "config.h"
 #include "gsl/permutation.h"
 #include "gsl/cdf.h"
+#include "gsl/math.h"
 #include "random.h"
 #include "types.h"
 #ifdef __cplusplus
@@ -35,12 +36,6 @@ extern "C"
 /**********************************************************************
  * Deterministic supernormalization
  **********************************************************************/
-
-//Struct of info pack for each supernormalize thread
-struct supernormalize_byrow_threadinfo{
-	MATRIXF*		m;		//matrix to be supernormalized
-	const FTYPE*	Pinv;	//Inverse cdf
-};
 
 /* Supernormalize matrix per row with single thread and buff provided.
  * Supernormalization takes place by converting the existing data into a normal distribution
@@ -62,7 +57,7 @@ void supernormalize_byrow_single_buffed(MATRIXF* m,gsl_permutation *p1,const FTY
  * 			(precalculated CDF values of normal distribution of the respective ranking)
  * Return:	0 on success.
  */
-static inline int supernormalize_byrow_single(MATRIXF* m,const FTYPE* restrict Pinv);
+int supernormalize_byrow_single(MATRIXF* m,const FTYPE* restrict Pinv);
 
 /* Obtain Inverse CDF for normal distribution of n fractiles.
  * n:		n
@@ -86,17 +81,35 @@ static inline void supernormalize_Pinv(size_t n,FTYPE*restrict Pinv);
 void supernormalize_byrow_buffed(MATRIXF* m,gsl_permutation * const *p,FTYPE* Pinv);
 int supernormalize_byrow(MATRIXF* m);
 
+/**********************************************************************
+ * Fluctuations after deterministic supernormalization
+ **********************************************************************/
+ 
+/* Same with supernormalize_byrow_single,
+ * supernormalize_byrow_buffed, and supernormalize_byrow,
+ * but with an extra parameter fluc:
+ * After supernormalization, every element x is fluctuated randomly,
+ * being replaced by x*(1+y*fluc), where y is uniformly distributed in [-1,1).
+ * The new matrix is then normalized to 0 mean and unit variance.
+ * Return:	0 if success.
+ */
+int supernormalizef_byrow_single(MATRIXF* m,const FTYPE* restrict Pinv,FTYPE fluc);
+void supernormalizef_byrow_buffed(MATRIXF* m,gsl_permutation * const *p,FTYPE* Pinv,FTYPE fluc);
+int supernormalizef_byrow(MATRIXF* m,FTYPE fluc);
+
+/**********************************************************************
+ * Auto fluctuations after deterministic supernormalization
+ **********************************************************************/
+ 
+/* Only fluctuates when m->size2<25, with fluc=m->size2^(-2).
+ */
+static inline int supernormalizea_byrow_single(MATRIXF* m,const FTYPE* restrict Pinv);
+static inline void supernormalizea_byrow_buffed(MATRIXF* m,gsl_permutation * const *p,FTYPE* Pinv);
+static inline int supernormalizea_byrow(MATRIXF* m);
 
 /**********************************************************************
  * Random supernormalization
  **********************************************************************/
-
-//Struct of info pack for each supernormalize thread
-struct supernormalizer_byrow_threadinfo{
-	MATRIXF	*m;		//matrix to be supernormalized
-	//VECTORF	*vb;	//Random data buff
-	//gsl_rng	*r;		//Random Number generator
-};
 
 //Check their supernormalize counterparts for definition.
 void supernormalizer_byrow_buffed(MATRIXF* m,MATRIXF* mb,gsl_permutation * const *p,gsl_rng * const* rng);
@@ -108,27 +121,36 @@ int supernormalizer_byrow(MATRIXF* m);
  * Static functions
  **********************************************************************/
 
-static inline int supernormalize_byrow_single(MATRIXF* m,const FTYPE* restrict Pinv)
-{
-	gsl_permutation *p1;
-	
-	p1=gsl_permutation_alloc(m->size2);
-	if(!p1)
-	{
-		LOG(1,"Can't allocate permutations.")
-		return 1;
-	}
-	supernormalize_byrow_single_buffed(m,p1,Pinv);
-	gsl_permutation_free(p1);
-	return 0;
-}
-
 static inline void supernormalize_Pinv(size_t n,FTYPE* restrict Pinv)
 {
 	size_t	i;
 
 	for(i=0;i<n;i++)
 		Pinv[i]=(FTYPE)gsl_cdf_gaussian_Pinv(((FTYPE)(i+1))/(FTYPE)(n+1),1);
+}
+
+static inline int supernormalizea_byrow_single(MATRIXF* m,const FTYPE* restrict Pinv)
+{
+	if(m->size2<25)
+		return supernormalizef_byrow_single(m,Pinv,(FTYPE)(1./gsl_pow_2((FTYPE)m->size2)));
+	else
+		return supernormalize_byrow_single(m,Pinv);
+}
+
+static inline void supernormalizea_byrow_buffed(MATRIXF* m,gsl_permutation * const *p,FTYPE* Pinv)
+{
+	if(m->size2<25)
+		supernormalizef_byrow_buffed(m,p,Pinv,(FTYPE)(1./gsl_pow_2((FTYPE)m->size2)));
+	else
+		supernormalize_byrow_buffed(m,p,Pinv);
+}
+
+static int supernormalizea_byrow(MATRIXF* m)
+{
+	if(m->size2<25)
+		return supernormalizef_byrow(m,(FTYPE)(1./gsl_pow_2((FTYPE)m->size2)));
+	else
+		return supernormalize_byrow(m);
 }
 
 #ifdef __cplusplus

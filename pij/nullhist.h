@@ -88,13 +88,6 @@ struct pij_nullhist_sample_model_param
 	const void* pm;
 };
 
-/* Null histogram generation of sample-model method on single thread.
- * g,t,t2,sampler,modeler,ps:	See pij_nullhist_sample_model_param.
- * pmc:		Model container object. See definition in nullmodel.h.
- * Return:	0 if success.
- */
-int pij_nullhist_sample_model_single(const void* data,const struct pij_nullsampler* sampler,const struct pij_nullmodeler* modeler,const void* ps,void* pmc);
-
 // Interface function of sample-model method, multithreaded.
 int	pij_nullhist_sample_model(const void* p,gsl_histogram* h);
 

@@ -43,18 +43,11 @@ int pij_gassist_llrtopij1_tot(const MATRIXG* g,const VECTORF* llr,VECTORF* p,siz
 	return pij_llrtopij_tot_convert(llr,llr,p,histogram_unequalbins_exp,pij_gassist_nullhist_analytical1_pdf,&ph,&pnh,nratio);
 }
 
-int pij_gassist_llrtopij2b_tot(const MATRIXG* g,const VECTORF* llr,VECTORF* p,size_t nv,double* nratio)
+int pij_gassist_llrtopij2_tot(const MATRIXG* g,const VECTORF* llr,VECTORF* p,size_t nv,double* nratio)
 {
 	const struct histogram_unequalbins_exp_param			ph={g->size2-nv,1};
 	const struct pij_gassist_nullhist_analytical_pdf_param	pnh={g,nv,5};
-	return pij_llrtopij_tot_convert(llr,llr,p,histogram_unequalbins_exp,pij_gassist_nullhist_analytical2b_pdf,&ph,&pnh,nratio);
-}
-
-int pij_gassist_llrtopij2c_tot(const MATRIXG* g,const VECTORF* llr,VECTORF* p,size_t nv,double* nratio)
-{
-	const struct histogram_unequalbins_exp_param			ph={g->size2-nv,1};
-	const struct pij_gassist_nullhist_analytical_pdf_param	pnh={g,nv,5};
-	return pij_llrtopij_tot_convert(llr,llr,p,histogram_unequalbins_exp,pij_gassist_nullhist_analytical2c_pdf,&ph,&pnh,nratio);
+	return pij_llrtopij_tot_convert(llr,llr,p,histogram_unequalbins_exp,pij_gassist_nullhist_analytical2_pdf,&ph,&pnh,nratio);
 }
 
 int pij_gassist_llrtopij3_tot(const MATRIXG* g,const VECTORF* llr,VECTORF* p,size_t nv,double* nratio)
@@ -70,25 +63,37 @@ int pij_gassist_llrtopij3_tot(const MATRIXG* g,const VECTORF* llr,VECTORF* p,siz
 #undef	CLEANUP
 }
 
-int pij_gassist_llrtopijs_tot(const MATRIXG* g,const MATRIXF* t,const MATRIXF* t2,const VECTORF* llr1,const MATRIXF* llr2b,const MATRIXF* llr2c,const MATRIXF* llr3,VECTORF* p1,MATRIXF* p2b,MATRIXF* p2c,MATRIXF* p3,size_t nv,char nodiag)
+int pij_gassist_llrtopij4_tot(const MATRIXG* g,const VECTORF* llr,VECTORF* p,size_t nv,double* nratio)
 {
-#define	CLEANUP	CLEANVECF(vp2)CLEANVECF(vp3)CLEANVECF(tp)CLEANVECF(tp2)
+	const struct histogram_unequalbins_exp_param			ph={g->size2-nv,1};
+	const struct pij_gassist_nullhist_analytical_pdf_param	pnh={g,nv,5};
+	return pij_llrtopij_tot_convert(llr,llr,p,histogram_unequalbins_exp,pij_gassist_nullhist_analytical4_pdf,&ph,&pnh,nratio);
+}
+
+int pij_gassist_llrtopij5_tot(const MATRIXG* g,const VECTORF* llr,VECTORF* p,size_t nv,double* nratio)
+{
+	const struct histogram_unequalbins_exp_param			ph={g->size2-nv,1};
+	const struct pij_gassist_nullhist_analytical_pdf_param	pnh={g,nv,5};
+	return pij_llrtopij_tot_convert(llr,llr,p,histogram_unequalbins_exp,pij_gassist_nullhist_analytical5_pdf,&ph,&pnh,nratio);
+}
+
+int pij_gassist_llrtopijs_tot(const MATRIXG* g,const MATRIXF* t,const MATRIXF* t2,const VECTORF* llr1,const MATRIXF* llr2,const MATRIXF* llr3,const MATRIXF* llr4,const MATRIXF* llr5,VECTORF* p1,MATRIXF* p2,MATRIXF* p3,MATRIXF* p4,MATRIXF* p5,size_t nv,char nodiag)
+{
+#define	CLEANUP	CLEANVECF(vp)CLEANVECF(tp)
 	int		ret;
 	size_t	ng,n;
 	double	nratio;		//Ratio of null distribution
-	VECTORF *vp2,*vp3,*tp,*tp2;
+	VECTORF *vp,*tp;
 
 	//Initialize
-	vp2=vp3=tp=tp2=0;
+	vp=tp=0;
 	ng=t->size1;
 	n=ng*t2->size1;
 	if(nodiag)
 		n-=GSL_MIN(ng,t2->size1);
-	vp2=VECTORFF(alloc)(n);
-	vp3=VECTORFF(alloc)(n);
+	vp=VECTORFF(alloc)(n);
 	tp=VECTORFF(alloc)(n);
-	tp2=VECTORFF(alloc)(n);
-	if(!(vp2&&vp3&&tp&&tp2))
+	if(!(vp&&tp))
 		ERRRET("Not enough memory.")
 	
 	if(VECTORFF(first_nan)(llr1)>=0)
@@ -98,93 +103,69 @@ int pij_gassist_llrtopijs_tot(const MATRIXG* g,const MATRIXF* t,const MATRIXF* t
 		ERRRET("Failed to calculate probabilities in step 1.")
 		
 	if(nodiag)
-		MATRIXFF(flatten_nodiag)(llr2b,tp);
+		MATRIXFF(flatten_nodiag)(llr2,tp);
 	else
-		MATRIXFF(flatten)(llr2b,tp);
+		MATRIXFF(flatten)(llr2,tp);
 	if(VECTORFF(first_nan)(tp)>=0)
 		LOG(4,"Infinity found for log likelihood ratio, possibly because data contains fully correlated/anticorrelated columns. This may affect downstream analyses.")
-	ret=pij_gassist_llrtopij2c_tot(g,tp,vp2,nv,&nratio);
+	ret=pij_gassist_llrtopij2_tot(g,tp,vp,nv,&nratio);
 	if(ret)
 		ERRRET("Failed to calculate probabilities in step 2.")
 	if(nodiag)
-		VECTORFF(wrap_nodiag)(vp2,p2b);
+		VECTORFF(wrap_nodiag)(vp,p2);
 	else
-		VECTORFF(wrap)(vp2,p2b);
+		VECTORFF(wrap)(vp,p2);
 	
 	if(nodiag)
-		MATRIXFF(flatten_nodiag)(llr2c,tp);
+		MATRIXFF(flatten_nodiag)(llr3,tp);
 	else
-		MATRIXFF(flatten)(llr2c,tp);
+		MATRIXFF(flatten)(llr3,tp);
 	if(VECTORFF(first_nan)(tp)>=0)
-		LOG(4,"Infinity found for log likelihood ratio, possibly because data contains fully correlated/anticorrelated columns. This may affect downstream analyses.")
-	ret=pij_gassist_llrtopij2c_tot(g,tp,vp2,nv,&nratio);
-	if(ret)
-		ERRRET("Failed to calculate probabilities in step 2.")
-	if(nodiag)
-		VECTORFF(wrap_nodiag)(vp2,p2c);
-	else
-		VECTORFF(wrap)(vp2,p2c);
-	
-	if(nodiag)
-		MATRIXFF(flatten_nodiag)(llr3,tp2);
-	else
-		MATRIXFF(flatten)(llr3,tp2);
-	if(VECTORFF(first_nan)(tp2)>=0)
 	{
 		LOG(4,"Infinity found for log likelihood ratio, possibly because data contains fully correlated/anticorrelated columns. This may affect downstream analyses.")
-		VECTORFF(set_nan)(tp2,0);
+		VECTORFF(set_nan)(tp,0);
 	}
-	ret=pij_gassist_llrtopij3_tot(g,tp2,vp3,nv,&nratio);
+	ret=pij_gassist_llrtopij3_tot(g,tp,vp,nv,&nratio);
 	if(ret)
 		ERRRET("Failed to calculate probabilities in step 3.")
 	if(nodiag)
-		VECTORFF(wrap_nodiag)(vp3,p3);
+		VECTORFF(wrap_nodiag)(vp,p3);
 	else
-		VECTORFF(wrap)(vp3,p3);
+		VECTORFF(wrap)(vp,p3);
+	
+	if(nodiag)
+		MATRIXFF(flatten_nodiag)(llr4,tp);
+	else
+		MATRIXFF(flatten)(llr4,tp);
+	if(VECTORFF(first_nan)(tp)>=0)
+		LOG(4,"Infinity found for log likelihood ratio, possibly because data contains fully correlated/anticorrelated columns. This may affect downstream analyses.")
+	ret=pij_gassist_llrtopij4_tot(g,tp,vp,nv,&nratio);
+	if(ret)
+		ERRRET("Failed to calculate probabilities in step 4.")
+	if(nodiag)
+		VECTORFF(wrap_nodiag)(vp,p4);
+	else
+		VECTORFF(wrap)(vp,p4);
+	
+	if(nodiag)
+		MATRIXFF(flatten_nodiag)(llr4,tp);
+	else
+		MATRIXFF(flatten)(llr4,tp);
+	if(VECTORFF(first_nan)(tp)>=0)
+		LOG(4,"Infinity found for log likelihood ratio, possibly because data contains fully correlated/anticorrelated columns. This may affect downstream analyses.")
+	ret=pij_gassist_llrtopij5_tot(g,tp,vp,nv,&nratio);
+	if(ret)
+		ERRRET("Failed to calculate probabilities in step 5.")
+	if(nodiag)
+		VECTORFF(wrap_nodiag)(vp,p5);
+	else
+		VECTORFF(wrap)(vp,p5);
 	
 	//Free memory
 	CLEANUP
 	return 0;
 #undef	CLEANUP
 }
-
-int pij_gassist_llrtopij_tot(const MATRIXG* g,const MATRIXF* t,const MATRIXF* t2,const VECTORF* llr1,const MATRIXF* llr2b,const MATRIXF* llr2c,const MATRIXF* llr3,MATRIXF* ansb,MATRIXF* ansc,size_t nv,char nodiag)
-{
-#define	CLEANUP	CLEANVECF(p1)CLEANMATF(p3)
-	int		ret;
-	size_t	i,ng;
-	VECTORF *p1;
-	MATRIXF	*p3;
-	VECTORFF(view)	vv;
-
-	//Initialize
-	ng=g->size1;
-	p1=VECTORFF(alloc)(llr1->size);
-	p3=MATRIXFF(alloc)(llr2b->size1,llr2b->size2);
-	if(!(p1&&p3))
-		ERRRET("Not enough memory.")
-
-	ret=pij_gassist_llrtopijs_tot(g,t,t2,llr1,llr2b,llr2c,llr3,p1,ansb,ansc,p3,nv,nodiag);
-	if(ret)
-		ERRRET("Failed to convert log likelihood ratios to probabilities.")
-
-	//Combine probabilities to full:
-	MATRIXFF(mul_elements)(ansb,p3);
-	MATRIXFF(mul_elements)(ansc,p3);
-	for(i=0;i<ng;i++)
-	{
-		vv=MATRIXFF(row)(ansb,i);
-		VECTORFF(scale)(&vv.vector,VECTORFF(get)(p1,i));
-		vv=MATRIXFF(row)(ansc,i);
-		VECTORFF(scale)(&vv.vector,VECTORFF(get)(p1,i));
-	}
-
-	//Free memory
-	CLEANUP
-	return 0;
-#undef	CLEANUP
-}
-
 
 
 

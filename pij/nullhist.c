@@ -28,7 +28,12 @@
 #include "nullhist.h"
 #include "nulldist.h"
 
-int pij_nullhist_sample_model_single(const void* data,const struct pij_nullsampler* sampler,const struct pij_nullmodeler* modeler,const void* ps,void* pmc)
+/* Null histogram generation of sample-model method on single thread.
+ * g,t,t2,sampler,modeler,ps:	See pij_nullhist_sample_model_param.
+ * pmc:		Model container object. See definition in nullmodel.h.
+ * Return:	0 if success.
+ */
+static int pij_nullhist_sample_model_single(const void* data,const struct pij_nullsampler* sampler,const struct pij_nullmodeler* modeler,const void* ps,void* pmc)
 {
 #define	CLEANUP	if(ptrs){sampler->close(ptrs);ptrs=0;}\
 				if(pm){modeler->close(pm);pm=0;}
