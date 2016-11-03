@@ -25,7 +25,7 @@ extern "C"
 
 
 /* The library needs to be initialized before any other function is called,
- * to perform corrected with desired log level and random seed.
+ * to perform correctly with desired log level and random seed.
  * loglv:	Logging level, see logger.h.
  * rs:		Initial random seed. If rs=0, use current time as random seed.
  * nthread:	Maximum number of threads, If nthread=0, use default setting.

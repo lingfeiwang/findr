@@ -14,7 +14,7 @@ URL_LIB_REL="$(URL_LIB)/releases"
 URL_BIN_REL="$(URL_BIN)/releases"
 URL_R_REL="$(URL_R)/releases"
 VERSION1=0
-VERSION2=3
+VERSION2=4
 VERSION3=0
 LICENSE=AGPL-3
 LICENSE_FULL="GNU Affero General Public License, Version 3"
@@ -42,7 +42,7 @@ DIR_INSTALL_LIB=$(DIR_INSTALL_PREFIX)/lib
 DIR_INSTALL_INC=$(DIR_INSTALL_PREFIX)/include/$(LIB_NAME)
 
 CC=gcc
-CFLAGSI=$(addprefix -I,$(R_INCLUDE_DIR) $(PREFIX)/include /usr/local/include)
+CFLAGSI=$(addprefix -I ,$(R_INCLUDE_DIR) $(PREFIX)/include /usr/local/include)
 F90C=gfortran
 F90FLAGS=-fPIC -fdefault-real-8 -ffixed-form -O3
 LD=gcc
@@ -143,7 +143,7 @@ Makefile.flags:
 	t1=$$(echo "$$gver" | grep -io gcc); \
 	if ! [ -n "$$t1" ]; then echo "Invalid GCC version. Please download the latest GCC."; exit 1; fi
 	@cflags="$(CFLAGS) $(CFLAGS_EXTRA) $(CFLAGSI) -fopenmp -ggdb -fPIC -Wall -Wextra -Wconversion -Wsign-conversion -Wundef -Wendif-labels -std=c99 -pedantic-errors $(OPTFLAGS)"; \
-	ldflags="$(LDFLAGS) -L$(PREFIX)/lib -L/usr/local/lib -L/usr/lib -fopenmp -lm -shared"; \
+	ldflags="$(LDFLAGS) -L $(PREFIX)/lib -L /usr/local/lib -L /usr/lib -fopenmp -lm -shared"; \
 	echo "Testing Windows"; \
 	gver=$$($(CC) --version) ; \
 	t1=$$(echo "$$gver" | grep -io "MSYS2"); \
@@ -164,7 +164,7 @@ Makefile.flags:
 		( ldflags="-Wl,--whole-archive $$ldflags2 -Wl,--no-whole-archive" ; \
 		  $(LD) $$ldflags $$ldflags2 --shared -o $(TMP_FILE) &> /dev/null || \
 		    ( echo "Can't link to local GSL with right flag." ; exit 1; ) ) ; \
-		cflags="-I$(DIR_SRC_GSL) $$cflags" ; \
+		cflags="-I $(DIR_SRC_GSL) $$cflags" ; \
 		ldflags="$$ldflags $$ldflags2" ; \
 	else \
 		ldflags="$$ldflags -lgsl -lgslcblas"; \

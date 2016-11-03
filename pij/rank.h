@@ -35,21 +35,24 @@ extern "C"
 #endif
 
 /* Convert LLR into probabilities per A. Uses pij_llrtopij_a_convert.
- * d:		(ng,nx) Source real LLRs to compare with null LLRs
- * dconv:	(ng,nt) LLRs to convert to probabilities. Can differ from d
- * ans:		(ng,nt) Output location of converted probabilities.
+ * ans:		(ng,nt) Source real LLRs to compare with null LLRs,
+ * 			also output location of converted probabilities.
  * ns:		Number of samples, used for calculation of null distribution
  * nodiag:	Whether diagonal elements of d should be ignored when converting
  * 			to probabilities
+ * nodiagshift:	Offdiagonal shift.
+ * 				For nodiagshift>0/<0, use upper/lower diagonals of corresponding id.
  * Return:	0 if succeed.
  */
-int pij_rank_llrtopij_a(const MATRIXF* d,const MATRIXF* dconv,MATRIXF* ans,size_t ns,char nodiag);
+int pij_rank_llrtopij_a(MATRIXF* ans,size_t ns,char nodiag,long nodiagshift);
 
 /* Calculate probabilities of A--B based on LLR distributions of real data 
  * and null hypothesis. Conversion from LLR to probability is per A.
  * See pij_rank_pij_any.
  */
-int pij_rank_a(const MATRIXF* t,const MATRIXF* t2,MATRIXF* p,char nodiag);
+int pij_rank_a(const MATRIXF* t,const MATRIXF* t2,MATRIXF* p,char nodiag,size_t memlimit);
+//Duplicate with a different name
+int pij_rank(const MATRIXF* t,const MATRIXF* t2,MATRIXF* p,char nodiag,size_t memlimit);
 
 
 

@@ -132,6 +132,10 @@
 #define	CLEANHIST(X)	CLEANANY(X,gsl_histogram_free)
 #define	CLEANFILE(X)	CLEANANY(X,fclose)
 #define	CLEANMMATF(X,N)	if(X){for(i=0;i<N;i++)CLEANMATF(X[i])free(X);X=0;}
+#define	CLEANMMATD(X,N)	if(X){for(i=0;i<N;i++)CLEANMATD(X[i])free(X);X=0;}
+#define	CLEANMVECD(X,N)	if(X){for(i=0;i<N;i++)CLEANVECD(X[i])free(X);X=0;}
+#define	CLEANMHIST(X,N)	if(X){for(i=0;i<N;i++)CLEANHIST(X[i])free(X);X=0;}
+#define	CLEANAMHIST(X,N)	if(X){for(i=0;i<N;i++)CLEANHIST(X[i])AUTOFREE(X)}
 #define	CLEANAMMATF(X,N)	if(X){for(i=0;i<N;i++)CLEANMATF(X[i])AUTOFREE(X)}
 
 
@@ -139,3 +143,31 @@
 #define	CALLOCSIZE(X,N)	((X)=calloc((N),sizeof(*(X))))
 
 #endif
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

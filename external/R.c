@@ -44,7 +44,7 @@ void external_R_lib_version(const char** ans)
 	*ans=lib_version();
 }
 
-void external_R_pijs_gassist_any(const int *ng,const int *nt,const int *ns,const int* g,const double* t,const double* t2,double* p1,double* p2,double* p3,double* p4,double* p5,const int* nv,const int* nodiag,int *ret,int (*func)(const MATRIXG*,const MATRIXF*,const MATRIXF*,VECTORF*,MATRIXF*,MATRIXF*,MATRIXF*,MATRIXF*,size_t,char))
+void external_R_pijs_gassist_any(const int *ng,const int *nt,const int *ns,const int* g,const double* t,const double* t2,double* p1,double* p2,double* p3,double* p4,double* p5,const int* nv,const int* nodiag,int *ret,int (*func)(const MATRIXG*,const MATRIXF*,const MATRIXF*,VECTORF*,MATRIXF*,MATRIXF*,MATRIXF*,MATRIXF*,size_t,char,size_t))
 {
 #define	CLEANUP	CLEANMATG(mg)CLEANMATF(mt)CLEANMATF(mt2)CLEANVECF(vp1)\
 				CLEANMATF(mp2)CLEANMATF(mp3)CLEANMATF(mp4)CLEANMATF(mp5)
@@ -88,7 +88,7 @@ void external_R_pijs_gassist_any(const int *ng,const int *nt,const int *ns,const
 			MATRIXFF(set)(mt2,i,j,(FTYPE)(t2[j*ntv+i]));
 	
 	//Calculation
-	*ret=func(mg,mt,mt2,vp1,mp2,mp3,mp4,mp5,nvv,nd);
+	*ret=func(mg,mt,mt2,vp1,mp2,mp3,mp4,mp5,nvv,nd,(size_t)-1);
 	//Copy data back
 	if(!*ret)
 	{
@@ -109,17 +109,12 @@ void external_R_pijs_gassist_any(const int *ng,const int *nt,const int *ns,const
 }
 
 
-void external_R_pijs_gassist_a(const int *ng,const int *nt,const int *ns,const int* g,const double* t,const double* t2,double* p1,double* p2,double* p3,double* p4,double* p5,const int* nv,const int* nodiag,int *ret)
+void external_R_pijs_gassist(const int *ng,const int *nt,const int *ns,const int* g,const double* t,const double* t2,double* p1,double* p2,double* p3,double* p4,double* p5,const int* nv,const int* nodiag,int *ret)
 {
-	external_R_pijs_gassist_any(ng,nt,ns,g,t,t2,p1,p2,p3,p4,p5,nv,nodiag,ret,pijs_gassist_a);
+	external_R_pijs_gassist_any(ng,nt,ns,g,t,t2,p1,p2,p3,p4,p5,nv,nodiag,ret,pijs_gassist);
 }
 
-void external_R_pijs_gassist_tot(const int *ng,const int *nt,const int *ns,const int* g,const double* t,const double* t2,double* p1,double* p2,double* p3,double* p4,double* p5,const int* nv,const int* nodiag,int *ret)
-{
-	external_R_pijs_gassist_any(ng,nt,ns,g,t,t2,p1,p2,p3,p4,p5,nv,nodiag,ret,pijs_gassist_tot);
-}
-
-void external_R_pij_gassist_any(const int *ng,const int *nt,const int *ns,const int* g,const double* t,const double* t2,double* p,const int* nv,const int* nodiag,int *ret,int (*func)(const MATRIXG*,const MATRIXF*,const MATRIXF*,MATRIXF*,size_t,char))
+void external_R_pij_gassist_any(const int *ng,const int *nt,const int *ns,const int* g,const double* t,const double* t2,double* p,const int* nv,const int* nodiag,int *ret,int (*func)(const MATRIXG*,const MATRIXF*,const MATRIXF*,MATRIXF*,size_t,char,size_t))
 {
 #define	CLEANUP	CLEANMATG(mg)CLEANMATF(mt)CLEANMATF(mt2)CLEANMATF(mp)
 	size_t	i,j;
@@ -157,7 +152,7 @@ void external_R_pij_gassist_any(const int *ng,const int *nt,const int *ns,const 
 			MATRIXFF(set)(mt2,i,j,(FTYPE)(t2[j*ntv+i]));
 	
 	//Calculation
-	*ret=func(mg,mt,mt2,mp,nvv,nd);
+	*ret=func(mg,mt,mt2,mp,nvv,nd,(size_t)-1);
 	//Copy data back
 	if(!*ret)
 	{
@@ -169,18 +164,17 @@ void external_R_pij_gassist_any(const int *ng,const int *nt,const int *ns,const 
 #undef CLEANUP
 }
 
-
-void external_R_pij_gassist_a(const int *ng,const int *nt,const int *ns,const int* g,const double* t,const double* t2,double* p,const int* nv,const int* nodiag,int *ret)
+void external_R_pij_gassist(const int *ng,const int *nt,const int *ns,const int* g,const double* t,const double* t2,double* p,const int* nv,const int* nodiag,int *ret)
 {
-	external_R_pij_gassist_any(ng,nt,ns,g,t,t2,p,nv,nodiag,ret,pij_gassist_a);
+	external_R_pij_gassist_any(ng,nt,ns,g,t,t2,p,nv,nodiag,ret,pij_gassist);
 }
 
-void external_R_pij_gassist_tot(const int *ng,const int *nt,const int *ns,const int* g,const double* t,const double* t2,double* p,const int* nv,const int* nodiag,int *ret)
+void external_R_pij_gassist_trad(const int *ng,const int *nt,const int *ns,const int* g,const double* t,const double* t2,double* p,const int* nv,const int* nodiag,int *ret)
 {
-	external_R_pij_gassist_any(ng,nt,ns,g,t,t2,p,nv,nodiag,ret,pij_gassist_tot);
+	external_R_pij_gassist_any(ng,nt,ns,g,t,t2,p,nv,nodiag,ret,pij_gassist_trad);
 }
 
-void external_R_pij_rank_a(const int *ng,const int *nt,const int *ns,const double* t,const double* t2,double* p,const int* nodiag,int *ret)
+void external_R_pij_rank(const int *ng,const int *nt,const int *ns,const double* t,const double* t2,double* p,const int* nodiag,int *ret)
 {
 #define	CLEANUP	CLEANMATF(mt)CLEANMATF(mt2)CLEANMATF(mp)
 	size_t	i,j;
@@ -211,7 +205,7 @@ void external_R_pij_rank_a(const int *ng,const int *nt,const int *ns,const doubl
 			MATRIXFF(set)(mt2,i,j,(FTYPE)(t2[j*ntv+i]));
 	
 	//Calculation
-	*ret=pij_rank_a(mt,mt2,mp,nd);
+	*ret=pij_rank(mt,mt2,mp,nd,(size_t)-1);
 	//Copy data back
 	if(!*ret)
 		for(i=0;i<ngv;i++)

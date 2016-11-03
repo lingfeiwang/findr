@@ -1,3 +1,22 @@
+0.4.0:
+	Interface changes:
+		Removed trailing _a's for all interface function names.
+		Removed _tot functions. (See Obsoletes.)
+		Binary interface has an extra parameter specifying memory usage limit.
+		Python interface has an optional parameter specifying memory usage limit.
+	Improvements:
+		We have introduced the function pij_gassist_trad for traditional inference test.
+		We have parallelized the remaining part of major computation and obtained even faster speed.
+		We have modified functions to perform inplace operations as much as possible to save memory.
+		We have introduced memory usage limit as a parameter (except R interface). Large datasets will be automatically split before calculation to keep memory usage under limit.
+		We have included p1 calculation for nodiag=1 case.
+		Better input validity checks for interfaces.
+		Bug corrections.
+	Obsoletes:
+		In order to reduce effort in improving and maintaining the package, we decided to obsolete several non-essential functions. They include:
+		pij(s)_*_tot functions: they will be hardly needed as more genes can be measured by advancing technologies.
+		Windows native support: The latest version of Windows has provided support for Ubuntu Bash. All interfaces should integrate better with Bash on Windows. (https://msdn.microsoft.com/commandline/wsl)
+
 0.3.0:
 	Function pijs_gassist_*: changed function definition to provide latest test statistics.
 	Function pij_gassist_*: added new funciton for recommended combination of tests.

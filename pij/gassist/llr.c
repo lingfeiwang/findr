@@ -288,11 +288,11 @@ static void pij_gassist_llr_block_buffed(const struct pij_gassist_llr_block_buff
 		VECTORFF(add_constant)(&vv.vector,-VECTORFF(get)(p->llr1,i));
 	}
 	
-	//llr3 final (Michoel's version)
+	//llr3 final
 	MATRIXFF(memcpy)(p->llr3,p->llr4);
 	MATRIXFF(sub)(p->llr3,p->mb1[1]);
 	MATRIXFF(scale)(p->llr3,-0.5);
-	//llr5 final (Wang's version)
+	//llr5 final
 	MATRIXFF(memcpy)(p->llr5,p->llr4);
 	MATRIXFF(sub)(p->llr5,p->llr2);
 	MATRIXFF(scale)(p->llr5,-0.5);

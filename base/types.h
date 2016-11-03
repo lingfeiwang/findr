@@ -35,11 +35,13 @@
 	#define BLASF(X)	BLASFO(X)
 	// Minimal value
 	#define FTYPE_MIN	FLT_MIN
+	#define FTYPE_MAX	FLT_MAX
 #elif FTYPEBITS == 64
 	#define FTYPE	double
 	#define	FTYPE_SUF	
 	#define BLASF(X)	BLASFD(X)
 	#define FTYPE_MIN	DBL_MIN
+	#define FTYPE_MAX	DBL_MAX
 #else
 	#error Unknown float type bit count.
 #endif

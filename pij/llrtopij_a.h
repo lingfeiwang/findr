@@ -56,7 +56,9 @@ gsl_histogram** pij_llrtopij_a_nullhist(double dmax,size_t nv,size_t nd,long n1c
 /* Convert LLR of real data to probabilities, when the distribution
  * of LLR of null distribution can be calculated analytically to follow
  * x=-0.5*log(1-z1/(z1+z2)), where z1~chi2(n1),z2~chi2(n2).
- * The conversion is performed for each gene A, i.e. per row of d and dconv
+ * The conversion is performed for each gene A, i.e. per row of d and dconv.
+ * This function is older than pij_llrtopij_a_convert_single so it is not parallel.
+ * Make it parallel before using.
  * d:		[nrow,nx] The data to use for calculation of conversion rule from LLR to pij.
  * dconv:	[nrow,nd] The data of LLR to actually convert to pij. Can be same with d.
  * ans:		[nrow,nd] The output location of converted pij from dconv.
@@ -64,9 +66,14 @@ gsl_histogram** pij_llrtopij_a_nullhist(double dmax,size_t nv,size_t nd,long n1c
  * n2:		Parameters of null distribution.
  * nodiag:	Whether diagonal elements of d should be ignored when converting
  * 			to probabilities.
+ * nodiagshift:	Diangonal column shift for nodiag==1.
+ * 				For nodiagshift>0/<0, use upper/lower diagonal. 
  * Return:	0 on success.
  */
-int pij_llrtopij_a_convert_single(const MATRIXF* d,const MATRIXF* dconv,MATRIXF* ans,size_t n1,size_t n2,char nodiag);
+int pij_llrtopij_a_convert_single(const MATRIXF* d,const MATRIXF* dconv,MATRIXF* ans,size_t n1,size_t n2,char nodiag,long nodiagshift);
+
+// Same with pij_llrtopij_a_convert_single, for d=dconv=ans. Saves memory.
+int pij_llrtopij_a_convert_single_self(MATRIXF* d,size_t n1,size_t n2,char nodiag,long nodiagshift);
 
 
 #ifdef __cplusplus

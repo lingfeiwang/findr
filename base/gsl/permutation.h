@@ -16,7 +16,7 @@
  * along with Findr.  If not, see <http://www.gnu.org/licenses/>.
  */
 #ifndef __HEADER_LIB_GSL_PERMUTATION_H__
-#define __HEADER_LIB_GSL_PERMUTAION_H__
+#define __HEADER_LIB_GSL_PERMUTATION_H__
 #include "../config.h"
 #ifndef LIBGSL_LOCAL
 #include <gsl/gsl_permutation.h>

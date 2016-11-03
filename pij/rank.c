@@ -81,10 +81,27 @@ static void pij_rank_llr(const MATRIXF* t,const MATRIXF* t2,MATRIXF* llr)
 	}
 }
 
-int pij_rank_llrtopij_a(const MATRIXF* d,const MATRIXF* dconv,MATRIXF* ans,size_t ns,char nodiag)
+/* Convert LLR into probabilities per A. Uses pij_llrtopij_a_convert.
+ * d:		(ng,nx) Source real LLRs to compare with null LLRs
+ * dconv:	(ng,nt) LLRs to convert to probabilities. Can differ from d
+ * ans:		(ng,nt) Output location of converted probabilities.
+ * ns:		Number of samples, used for calculation of null distribution
+ * nodiag:	Whether diagonal elements of d should be ignored when converting
+ * 			to probabilities
+ * nodiagshift:	Offdiagonal shift.
+ * 				For nodiagshift>0/<0, use upper/lower diagonals of corresponding id.
+ * Return:	0 if succeed.
+ */
+int pij_rank_llrtopij_a_general(const MATRIXF* d,const MATRIXF* dconv,MATRIXF* ans,size_t ns,char nodiag,long nodiagshift)
 {
 	LOG(9,"Converting LLR to probabilities on per A basis.")
-	return pij_llrtopij_a_convert_single(d,dconv,ans,1,ns-2,nodiag);
+	return pij_llrtopij_a_convert_single(d,dconv,ans,1,ns-2,nodiag,nodiagshift);
+}
+
+int pij_rank_llrtopij_a(MATRIXF* ans,size_t ns,char nodiag,long nodiagshift)
+{
+	LOG(9,"Converting LLR to probabilities on per A basis.")
+	return pij_llrtopij_a_convert_single_self(ans,1,ns-2,nodiag,nodiagshift);
 }
 
 /* Calculate probabilities of A--B based on LLR distributions of real data 
@@ -96,31 +113,37 @@ int pij_rank_llrtopij_a(const MATRIXF* d,const MATRIXF* dconv,MATRIXF* ans,size_
  *			In this case, set nodiag to 1 to avoid inclusion of NANs. For nodiag=0, t and t2
  *			should not have any identical genes.
  * pij:		Function to convert LLR to probabilities, such as pij_rank_llrtopij_a
+ * memlimit:Specifies approximate memory usage. Function can fail if memlimit is too small. For large dataset, memory usage will be reduced by spliting t into smaller chunks and infer separately. For unlimited memory, set memlimit=-1.	
  * Return:	0 if succeed.
  */
-static int pij_rank_pij_any(const MATRIXF* t,const MATRIXF* t2,MATRIXF* p,char nodiag,int (*pij)(const MATRIXF*,const MATRIXF*,MATRIXF*,size_t,char))
+static int pij_rank_any(const MATRIXF* t,const MATRIXF* t2,MATRIXF* p,char nodiag,int (*pij)(MATRIXF*,size_t,char,long),size_t memlimit)
 {
-#define	CLEANUP			CLEANMATF(tnew)CLEANMATF(tnew2)\
-						CLEANMATF(llr)
+#define	CLEANUP		CLEANMATF(tnew)CLEANMATF(tnew2)
 	MATRIXF		*tnew,*tnew2;			//(nt,ns) Supernormalized transcript matrix
-	MATRIXF		*llr;
+	MATRIXFF(view)	mvt,mvp;
 	VECTORFF(view)	vv;
 	int			ret;
-	size_t		ng,nt,ns;
+	size_t		ng,nt,ns,ngnow,nsplit=(size_t)-1;
+	size_t		i;
 	
 	ng=t->size1;
 	nt=t2->size1;
 	ns=t->size2;
 
-	tnew=tnew2=llr=0;
+	tnew=tnew2=0;
 	
 	//Validation
-	assert((t2->size2==ns)&&(p->size1==ng)&&(p->size2==nt));
-	
-	llr=MATRIXFF(alloc)(ng,nt);
+	assert((t2->size2==ns)&&(p->size1==ng)&&(p->size2==nt)&&nsplit&&memlimit);
+	{
+		size_t mem;
+		mem=(2*t->size1*t->size2+2*t2->size1*t2->size2+p->size1*p->size2)*FTYPEBITS/8;
+		if(memlimit<=mem)
+			ERRRET("Memory limit lower than minimum memory needed. Try increasing your memory usage limit.")
+	}
+
 	tnew=MATRIXFF(alloc)(ng,ns);
 	tnew2=MATRIXFF(alloc)(nt,ns);
-	if(!(llr&&tnew&&tnew2))
+	if(!(tnew&&tnew2))
 		ERRRET("Not enough memory.")
 
 	//Step 1: Supernormalization
@@ -131,33 +154,40 @@ static int pij_rank_pij_any(const MATRIXF* t,const MATRIXF* t2,MATRIXF* p,char n
 	ret=ret||supernormalizea_byrow(tnew2);
 	if(ret)
 		ERRRET("Supernormalization failed.")
-	
-	//Step 2: Log likelihood ratios from nonpermuted data
-	LOG(9,"Calculating real log likelihood ratios...")
-	pij_rank_llr(tnew,tnew2,llr);
-	if(nodiag)
-	{
-		vv=MATRIXFF(diagonal)(llr);
-		VECTORFF(set_zero)(&vv.vector);
-	}
-	//Step 3: Convert log likelihood ratios to probabilities
-	if((ret=pij(llr,llr,p,ns,nodiag)))
-		LOG(1,"Failed to convert log likelihood ratios to probabilities.")
 
+// 	nsplit=(size_t)ceil((float)ng/ceil((float)ng/(float)nsplit));
+	for(i=0;i<ng;i+=nsplit)
+	{
+		ngnow=GSL_MIN(ng-i,nsplit);
+		mvt=MATRIXFF(submatrix)(tnew,i,0,ngnow,tnew->size2);
+		mvp=MATRIXFF(submatrix)(p,i,0,ngnow,p->size2);
+		//Step 2: Log likelihood ratios from nonpermuted data
+		LOG(10,"Calculating real log likelihood ratios...")
+		pij_rank_llr(&mvt.matrix,tnew2,&mvp.matrix);
+		if(nodiag)
+		{
+			vv=MATRIXFF(superdiagonal)(&mvp.matrix,i);
+			VECTORFF(set_zero)(&vv.vector);
+		}
+		//Step 3: Convert log likelihood ratios to probabilities
+		if((ret=pij(&mvp.matrix,ns,nodiag,(long)i)))
+			LOG(1,"Failed to convert log likelihood ratios to probabilities.")
+	}
 	//Cleanup
 	CLEANUP
 	return ret;
 #undef	CLEANUP		
 }
 
-int pij_rank_a(const MATRIXF* t,const MATRIXF* t2,MATRIXF* p,char nodiag)
+int pij_rank_a(const MATRIXF* t,const MATRIXF* t2,MATRIXF* p,char nodiag,size_t memlimit)
 {
-	return pij_rank_pij_any(t,t2,p,nodiag,pij_rank_llrtopij_a);
+	return pij_rank_any(t,t2,p,nodiag,pij_rank_llrtopij_a,memlimit);
 }
 
-
-
-
+int pij_rank(const MATRIXF* t,const MATRIXF* t2,MATRIXF* p,char nodiag,size_t memlimit)
+{
+	return pij_rank_a(t,t2,p,nodiag,memlimit);
+}
 
 
 

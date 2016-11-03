@@ -132,7 +132,7 @@ static void pij_llrtopij_histogram_smoothen_buffed(gsl_histogram *h,double sigma
 	VECTORDF(cumsum)(&vv2.vector);
 	VECTORDF(minmax)(&vv2.vector,&t1,&t2);
 	VECTORDF(scale)(&vv2.vector,ddiff/(t2-t1));
-	VECTORDF(add_constant)(&vv2.vector,dmin-t1);
+	VECTORDF(add_constant)(&vv2.vector,dmin-t1*ddiff/(t2-t1));
 }
 
 /* Construct central value histogram from bounded histogram for interpolation.
@@ -182,14 +182,23 @@ void pij_llrtopij_histogram_interpolate_linear(const gsl_histogram *hc,const VEC
 	}
 }
 
-int pij_llrtopij_convert_histograms_make_buffs(size_t n,VECTORD** vb1,VECTORD** vb2)
+void pij_llrtopij_convert_histograms_get_buff_sizes(size_t n,size_t *n1,size_t *n2)
 {
-#define	CLEANUP	CLEANVECD(*vb1)CLEANVECD(*vb2)
 	size_t ncut;
 
 	ncut=GSL_MIN(n/2,50);
-	*vb1=VECTORDF(alloc)(n+2*ncut-1);
-	*vb2=VECTORDF(alloc)(2*ncut+1);
+	*n1=n+2*ncut-1;
+	*n2=2*ncut+1;
+}
+
+int pij_llrtopij_convert_histograms_make_buffs(size_t n,VECTORD** vb1,VECTORD** vb2)
+{
+#define	CLEANUP	CLEANVECD(*vb1)CLEANVECD(*vb2)
+	size_t n1,n2;
+	
+	pij_llrtopij_convert_histograms_get_buff_sizes(n,&n1,&n2);
+	*vb1=VECTORDF(alloc)(n1);
+	*vb2=VECTORDF(alloc)(n2);
 	if(!(*vb1&&*vb2))
 		ERRRET("Not enough memory.")
 	return 0;
@@ -239,14 +248,13 @@ void pij_llrtopij_convert_histograms_buffed(gsl_histogram* hreal,VECTORD* vnull,
 	vvreal=VECTORDF(view_array)(hreal->bin,nbin);
 	VECTORDF(memcpy)(&vvreal.vector,vnull);
 	
-	//NOT Slightly smoothen before convert to monotonic function
-	psmooth=GSL_MIN((double)ncut/3.,30.);
-	vv1=VECTORDF(subvector)(vb1,0,hreal->n+2*ncut-1);
-	vv2=VECTORDF(subvector)(vb2,0,2*ncut+1);
-	//pij_llrtopij_histogram_smoothen_buffed(hreal,psmooth/3.,ncut,&vv1.vector,&vv2.vector);
 	//Convert true ratio to monotonic function and smoothening
 	vv3=VECTORDF(subvector)(vb1,0,hreal->n);
 	pij_llrtopij_histogram_force_incremental_buffed(hreal,&vv3.vector);
+	//Slightly smoothen before convert to monotonic function
+	psmooth=GSL_MIN((double)ncut/3.,30.);
+	vv1=VECTORDF(subvector)(vb1,0,hreal->n+2*ncut-1);
+	vv2=VECTORDF(subvector)(vb2,0,2*ncut+1);
 	pij_llrtopij_histogram_smoothen_buffed(hreal,psmooth,ncut,&vv1.vector,&vv2.vector);
 	
 	//Convert bounded histogram to central histogram

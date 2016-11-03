@@ -39,6 +39,13 @@ extern "C"
  */
 void pij_llrtopij_histogram_interpolate_linear(const gsl_histogram *hc,const VECTORF* d,VECTORF* ans);
  
+/* Calculate buffer sizes for histogram conversion in pij_llrtopij_convert_histograms_buffed.
+ * n:	Number of histogram bins. This must match pij_llrtopij_convert_histograms_buffed.
+ * n1,
+ * n2:	Sizes of two buffers for VECTORD.
+ */
+void pij_llrtopij_convert_histograms_get_buff_sizes(size_t n,size_t *n1,size_t *n2);
+
 /* Allocate buffer for histogram conversion in pij_llrtopij_convert_histograms_buffed.
  * n:	Number of histogram bins. This must match pij_llrtopij_convert_histograms_buffed.
  * vb1,

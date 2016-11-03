@@ -50,65 +50,16 @@ extern "C"
  * 			the top rows of t2 (in calculation of llr).
  * Return:	0 if success.
  */
-int pij_gassist_llrtopij_a_convert(const MATRIXF* d,const MATRIXF* dconv,MATRIXF* ans,const MATRIXG* g,size_t nv,long n1c,size_t n1d,long n2c,size_t n2d,char nodiag);
+int pij_gassist_llrtopij_a_convert(const MATRIXF* d,const MATRIXF* dconv,MATRIXF* ans,const MATRIXG* g,size_t nv,long n1c,size_t n1d,long n2c,size_t n2d,char nodiag,long nodiagshift);
 
-/* Functions to convert LLR of specific steps into probabilities.
- * Uses pij_llrtopij_a_convert with different settings of n1d and n2d.
- * Function name suffices indicate which LLR to convert.
- */
-static inline int pij_gassist_llrtopij1_a(const MATRIXF* d,const MATRIXF* dconv,MATRIXF* ans,const MATRIXG* g,size_t nv,char nodiag);
-static inline int pij_gassist_llrtopij2_a(const MATRIXF* d,const MATRIXF* dconv,MATRIXF* ans,const MATRIXG* g,size_t nv,char nodiag);
-static inline int pij_gassist_llrtopij3_a(const MATRIXF* d,const MATRIXF* dconv,MATRIXF* ans,const MATRIXG* g,size_t nv,char nodiag);
-static inline int pij_gassist_llrtopij4_a(const MATRIXF* d,const MATRIXF* dconv,MATRIXF* ans,const MATRIXG* g,size_t nv,char nodiag);
-static inline int pij_gassist_llrtopij5_a(const MATRIXF* d,const MATRIXF* dconv,MATRIXF* ans,const MATRIXG* g,size_t nv,char nodiag);
+int pij_gassist_llrtopij_a_convert_self(MATRIXF* d,const MATRIXG* g,size_t nv,long n1c,size_t n1d,long n2c,size_t n2d,char nodiag,long nodiagshift);
 
 /* Converts four LLRs into probabilities together.
  * Uses pij_gassist_llrtopij1_a to pij_gassist_llrtopij5_a.
  * See above functions for parameter definitions.
  * Return: 0 if all functions are successful.
  */
-int pij_gassist_llrtopijs_a(const MATRIXG* g,const VECTORF* llr1,const MATRIXF* llr2,const MATRIXF* llr3,const MATRIXF* llr4,const MATRIXF* llr5,VECTORF* p1,MATRIXF* p2,MATRIXF* p3,MATRIXF* p4,MATRIXF* p5,size_t nv,char nodiag);
-
-
-/**********************************************************************
- * Static functions
- **********************************************************************/
-
-static inline int pij_gassist_llrtopij1_a(const MATRIXF* d,const MATRIXF* dconv,MATRIXF* ans,const MATRIXG* g,size_t nv,char nodiag)
-{
-	LOG(9,"Converting LLR to probabilities for step 1 on per A basis.")
-	return pij_gassist_llrtopij_a_convert(d,dconv,ans,g,nv,1,1,1,g->size2-2,nodiag);
-}
-
-static inline int pij_gassist_llrtopij2_a(const MATRIXF* d,const MATRIXF* dconv,MATRIXF* ans,const MATRIXG* g,size_t nv,char nodiag)
-{
-	LOG(9,"Converting LLR to probabilities for step 2 on per A basis.")
-	return pij_gassist_llrtopij_a_convert(d,dconv,ans,g,nv,1,1,1,g->size2-2,nodiag);
-}
-
-static inline int pij_gassist_llrtopij3_a(const MATRIXF* d,const MATRIXF* dconv,MATRIXF* ans,const MATRIXG* g,size_t nv,char nodiag)
-{
-	LOG(9,"Converting LLR to probabilities for step 3 on per A basis.")
-	if(pij_gassist_llrtopij_a_convert(d,dconv,ans,g,nv,1,1,1,g->size2-3,nodiag))
-		return 1;
-	MATRIXFF(scale)(ans,-1);
-	MATRIXFF(add_constant)(ans,1);
-	return 0;
-}
-
-static inline int pij_gassist_llrtopij4_a(const MATRIXF* d,const MATRIXF* dconv,MATRIXF* ans,const MATRIXG* g,size_t nv,char nodiag)
-{
-	LOG(9,"Converting LLR to probabilities for step 4 on per A basis.")
-	return pij_gassist_llrtopij_a_convert(d,dconv,ans,g,nv,1,2,1,g->size2-3,nodiag);
-}
-
-static inline int pij_gassist_llrtopij5_a(const MATRIXF* d,const MATRIXF* dconv,MATRIXF* ans,const MATRIXG* g,size_t nv,char nodiag)
-{
-	LOG(9,"Converting LLR to probabilities for step 5 on per A basis.")
-	if(pij_gassist_llrtopij_a_convert(d,dconv,ans,g,nv,0,1,1,g->size2-3,nodiag))
-		return 1;
-	return 0;
-}
+int pij_gassist_llrtopijs_a(const MATRIXG* g,VECTORF* p1,MATRIXF* p2,MATRIXF* p3,MATRIXF* p4,MATRIXF* p5,size_t nv,char nodiag,long nodiagshift);
 
 
 

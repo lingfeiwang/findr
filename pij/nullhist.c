@@ -94,7 +94,7 @@ int	pij_nullhist_sample_model(const void* param,gsl_histogram* h)
 	if(!container)
 		ERRRET("Modeler container construction failed.")
 
-	#pragma omp parallel
+	#pragma omp parallel shared(ret)
 	{
 		char d[p->dsize];
 		//Initializing block selection
@@ -104,7 +104,7 @@ int	pij_nullhist_sample_model(const void* param,gsl_histogram* h)
 		//Calculate null histograms
 			retth=pij_nullhist_sample_model_single(d,p->sampler,p->modeler,p->ps,container);
 			#pragma omp atomic
-			ret+=retth;
+				ret+=retth;
 		}
 	}
 	if(ret)

@@ -6,7 +6,7 @@ This package is the C implementation of Findr library. It requires recent builds
 
 A more detailed documentation of Findr can be found as doc.pdf.
 
-[1] Lingfei Wang and Tom Michoel. (In preparation). 2016.
+[1] Lingfei Wang and Tom Michoel, Efficient causal inference with hidden confounders from genome-transcriptome variation data (In preparation). 2016.
 [2] https://github.com/lingfeiwang/findr
 [3] https://github.com/lingfeiwang/findr-bin
 [4] https://github.com/lingfeiwang/findr-python
