@@ -2,13 +2,13 @@ Findr (Fast Inference of Networks from Directed Regulations) is a statistical in
 
 Findr obtains much higher accuracy and faster speed than existing programs [1]. This is due to the analytical and implementational advances. Findr library can be downloaded from [2].
 
-This package is the C implementation of Findr library. It requires recent builds of GCC, GNU make, and GNU Scientific Library (GSL). Users can use the provided binary and python interfaces, or R package to interact with Findr library to perform calculations, or write one's own program and call Findr. The binary, python, and R entry points can be downloaded from [3], [4], [5] respectively. On Windows, we recommend downloading the prebuilt releases from [6].
+This package is the C implementation of Findr library. It requires recent builds of GCC, GNU make, and GNU Scientific Library (GSL). Users can use the provided binary and python interfaces, or R package to interact with Findr library to perform calculations, or write one's own program and call Findr. The binary, python, and R entry points can be downloaded from [3], [4], [5] respectively. On Windows, we recommend building and running Findr on "Bash on Windows" [6], rather than building everything natively from scratch.
 
 A more detailed documentation of Findr can be found as doc.pdf.
 
-[1] Lingfei Wang and Tom Michoel, Efficient causal inference with hidden confounders from genome-transcriptome variation data (In preparation). 2016.
+[1] Lingfei Wang and Tom Michoel, Efficient causal inference with hidden confounders from genome-transcriptome variation data (In preparation). 2016. https://arxiv.org/abs/1611.01114
 [2] https://github.com/lingfeiwang/findr
 [3] https://github.com/lingfeiwang/findr-bin
 [4] https://github.com/lingfeiwang/findr-python
 [5] https://github.com/lingfeiwang/findr-R
-[6] https://github.com/lingfeiwang/findr/releases
+[6] https://msdn.microsoft.com/commandline/wsl/about
