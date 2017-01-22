@@ -1,4 +1,4 @@
-/* Copyright 2016 Lingfei Wang
+/* Copyright 2016, 2017 Lingfei Wang
  * 
  * This file is part of Findr.
  * 
@@ -248,8 +248,23 @@ int pij_llrtopij_a_convert_single_self(MATRIXF* d,size_t n1,size_t n2,char nodia
 	{
 		FTYPE		dmin,dmax;
 		MATRIXFF(minmax)(d,&dmin,&dmax);
-		if((!(dmin>=0))||gsl_isnan(dmax)||gsl_isinf(dmax))
+		if((!(dmin>=0))||gsl_isnan(dmax))
 			ERRRET("Negative or NAN found in input data. It may invalidate follow up analysis. This may be due to incorrect previous steps.")
+		if(gsl_isinf(dmax))
+		{
+			size_t	j,k;
+			FTYPE	tv;
+			LOG(5,"INF found in input data. It may invalidate follow up analysis. This may be due to incorrect previous steps or duplicate rows (by Spearman correlation).")
+			dmax=dmin;
+			for(j=0;j<d->size1;j++)
+				for(k=0;k<d->size2;k++)
+				{
+					tv=MATRIXFF(get)(d,j,k);
+					if((tv>dmax)&&(!gsl_isinf(tv)))
+						dmax=tv;
+				}
+			MATRIXFF(set_inf)(d,dmax);
+		}
 		h=pij_llrtopij_a_nullhist_single((double)dmax,d->size2,n1,n2);
 		if(!h)
 			ERRRET("pij_llrtopij_a_nullhist_single failed.")

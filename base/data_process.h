@@ -1,4 +1,4 @@
-/* Copyright 2016 Lingfei Wang
+/* Copyright 2016, 2017 Lingfei Wang
  * 
  * This file is part of Findr.
  * 
@@ -173,12 +173,23 @@ static inline void MATRIXDF(bound_both)(MATRIXD* m,double vlow,double vhigh);
  */
 static inline void VECTOROF(set_cond)(VECTORO* v,int (*func)(float),float val);
 static inline void VECTORDF(set_cond)(VECTORD* v,int (*func)(double),double val);
+/* Sets all elements of matrix that satisfies the condition to one single value.
+ * m:		matrix
+ * func:	condition to satisfy to change value
+ * val:		new value
+ */
+static inline void MATRIXOF(set_cond)(MATRIXO* v,int (*func)(float),float val);
+static inline void MATRIXDF(set_cond)(MATRIXD* v,int (*func)(double),double val);
 
 // Sets all inf or nan to new value
 static inline void VECTOROF(set_inf)(VECTORO* v,float val);
 static inline void VECTOROF(set_nan)(VECTORO* v,float val);
 static inline void VECTORDF(set_inf)(VECTORD* v,double val);
 static inline void VECTORDF(set_nan)(VECTORD* v,double val);
+static inline void MATRIXOF(set_inf)(MATRIXO* m,float val);
+static inline void MATRIXOF(set_nan)(MATRIXO* m,float val);
+static inline void MATRIXDF(set_inf)(MATRIXD* m,double val);
+static inline void MATRIXDF(set_nan)(MATRIXD* m,double val);
 
 /* Locates the first not number in a vector/matrix, and return its location.
  * If not found, return -1.
@@ -557,20 +568,42 @@ static inline void VECTORDF(set_cond)(VECTORD* v,int (*func)(double),double val)
 			VECTORDF(set)(v,i,val);
 }
 
+static inline void MATRIXOF(set_cond)(MATRIXO* m,int (*func)(float),float val)
+{
+	size_t	i,j;
+	for(i=0;i<m->size1;i++)
+		for(j=0;j<m->size2;j++)
+			if(func(MATRIXOF(get)(m,i,j)))
+				MATRIXOF(set)(m,i,j,val);
+}
+
+static inline void MATRIXDF(set_cond)(MATRIXD* m,int (*func)(double),double val)
+{
+	size_t	i,j;
+	for(i=0;i<m->size1;i++)
+		for(j=0;j<m->size2;j++)
+			if(func(MATRIXDF(get)(m,i,j)))
+				MATRIXDF(set)(m,i,j,val);
+}
+
+static inline int gsl_isinf_f(float f)
+{
+	return gsl_isinf(f);
+}
+
+static inline int gsl_isnan_f(float f)
+{
+	return gsl_isnan(f);
+}
+
 static inline void VECTOROF(set_inf)(VECTORO* v,float val)
 {
-	size_t	i;
-	for(i=0;i<v->size;i++)
-		if(gsl_isinf(VECTOROF(get)(v,i)))
-			VECTOROF(set)(v,i,val);
+	VECTOROF(set_cond)(v,gsl_isinf_f,val);
 }
 
 static inline void VECTOROF(set_nan)(VECTORO* v,float val)
 {
-	size_t	i;
-	for(i=0;i<v->size;i++)
-		if(gsl_isnan(VECTOROF(get)(v,i)))
-			VECTOROF(set)(v,i,val);
+	VECTOROF(set_cond)(v,gsl_isnan_f,val);
 }
 
 static inline void VECTORDF(set_inf)(VECTORD* v,double val)
@@ -583,12 +616,31 @@ static inline void VECTORDF(set_nan)(VECTORD* v,double val)
 	VECTORDF(set_cond)(v,gsl_isnan,val);
 }
 
+static inline void MATRIXOF(set_inf)(MATRIXO* m,float val)
+{
+	MATRIXOF(set_cond)(m,gsl_isinf_f,val);
+}
+
+static inline void MATRIXOF(set_nan)(MATRIXO* m,float val)
+{
+	MATRIXOF(set_cond)(m,gsl_isnan_f,val);
+}
+
+static inline void MATRIXDF(set_inf)(MATRIXD* m,double val)
+{
+	MATRIXDF(set_cond)(m,gsl_isinf,val);
+}
+
+static inline void MATRIXDF(set_nan)(MATRIXD* m,double val)
+{
+	MATRIXDF(set_cond)(m,gsl_isnan,val);
+}
+
 static inline void MATRIXFF(cov1)(const MATRIXF* m,MATRIXF* cov)
 {
 	size_t i,j;
 	
-	BLASF(syrk)(CblasUpper,CblasNoTrans,1,m,0,cov);
-	MATRIXFF(scale)(cov,1/((FTYPE)(m->size2)));
+	BLASF(syrk)(CblasUpper,CblasNoTrans,(FTYPE)1./((FTYPE)(m->size2)),m,0,cov);
 	//Set bottom half
 	for(i=m->size1-1;i;i--)
 		for(j=0;j<i;j++)
@@ -597,8 +649,7 @@ static inline void MATRIXFF(cov1)(const MATRIXF* m,MATRIXF* cov)
 
 static inline void MATRIXFF(cov2)(const MATRIXF* m1,const MATRIXF* m2,MATRIXF* cov)
 {
-	BLASF(gemm)(CblasNoTrans,CblasTrans,1,m1,m2,0,cov);
-	MATRIXFF(scale)(cov,1/((FTYPE)(m1->size2)));
+	BLASF(gemm)(CblasNoTrans,CblasTrans,(FTYPE)1./((FTYPE)(m1->size2)),m1,m2,0,cov);
 }
 
 static inline void MATRIXFF(cov2_1v1)(const MATRIXF* m1,const MATRIXF* m2,VECTORF* cov)

@@ -1,4 +1,4 @@
-/* Copyright 2016 Lingfei Wang
+/* Copyright 2016, 2017 Lingfei Wang
  * 
  * This file is part of Findr.
  * 
@@ -373,18 +373,21 @@ int pij_gassist_llrtopij_a_convert_self(MATRIXF* d,const MATRIXG* g,size_t nv,lo
 static inline int pij_gassist_llrtopij1_a(MATRIXF* d,const MATRIXG* g,size_t nv,char nodiag,long nodiagshift)
 {
 	LOG(9,"Converting LLR to probabilities for step 1 on per A basis.")
+	assert(g->size2>2);
 	return pij_gassist_llrtopij_a_convert_self(d,g,nv,1,1,1,g->size2-2,nodiag,nodiagshift);
 }
 
 static inline int pij_gassist_llrtopij2_a(MATRIXF* d,const MATRIXG* g,size_t nv,char nodiag,long nodiagshift)
 {
 	LOG(9,"Converting LLR to probabilities for step 2 on per A basis.")
+	assert(g->size>22);
 	return pij_gassist_llrtopij_a_convert_self(d,g,nv,1,1,1,g->size2-2,nodiag,nodiagshift);
 }
 
 static inline int pij_gassist_llrtopij3_a(MATRIXF* d,const MATRIXG* g,size_t nv,char nodiag,long nodiagshift)
 {
 	LOG(9,"Converting LLR to probabilities for step 3 on per A basis.")
+	assert(g->size2>3);
 	if(pij_gassist_llrtopij_a_convert_self(d,g,nv,1,1,1,g->size2-3,nodiag,nodiagshift))
 		return 1;
 	MATRIXFF(scale)(d,-1);
@@ -395,12 +398,14 @@ static inline int pij_gassist_llrtopij3_a(MATRIXF* d,const MATRIXG* g,size_t nv,
 static inline int pij_gassist_llrtopij4_a(MATRIXF* d,const MATRIXG* g,size_t nv,char nodiag,long nodiagshift)
 {
 	LOG(9,"Converting LLR to probabilities for step 4 on per A basis.")
+	assert(g->size2>3);
 	return pij_gassist_llrtopij_a_convert_self(d,g,nv,1,2,1,g->size2-3,nodiag,nodiagshift);
 }
 
 static inline int pij_gassist_llrtopij5_a(MATRIXF* d,const MATRIXG* g,size_t nv,char nodiag,long nodiagshift)
 {
 	LOG(9,"Converting LLR to probabilities for step 5 on per A basis.")
+	assert(g->size2>3);
 	if(pij_gassist_llrtopij_a_convert_self(d,g,nv,0,1,1,g->size2-3,nodiag,nodiagshift))
 		return 1;
 	return 0;
@@ -410,6 +415,11 @@ static inline int pij_gassist_llrtopij5_a(MATRIXF* d,const MATRIXG* g,size_t nv,
 int pij_gassist_llrtopijs_a(const MATRIXG* g,VECTORF* p1,MATRIXF* p2,MATRIXF* p3,MATRIXF* p4,MATRIXF* p5,size_t nv,char nodiag,long nodiagshift)
 {
 	int	ret=0,ret2=0;
+	if(g->size2<=3)
+	{
+		LOG(0,"Needs at least 4 samples to compute probabilities.")
+		return 1;
+	}
 	ret=ret||(ret2=pij_gassist_llrtopij2_a(p2,g,nv,0,0));
 	if(ret2)
 		LOG(1,"Failed to log likelihood ratios to probabilities in step 2.")

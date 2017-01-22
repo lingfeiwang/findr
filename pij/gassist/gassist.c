@@ -1,4 +1,4 @@
-/* Copyright 2016 Lingfei Wang
+/* Copyright 2016, 2017 Lingfei Wang
  * 
  * This file is part of Findr.
  * 
@@ -35,14 +35,14 @@ int pijs_gassist_a(const MATRIXG* g,const MATRIXF* t,const MATRIXF* t2,VECTORF* 
 	MATRIXFF(view)	mvt,mvp2,mvp3,mvp4,mvp5;
 	VECTORFF(view)	vv,vvp1;
 	int			ret;
-	size_t		i,ng,ngnow,nsplit;
+	size_t		i,ng,ngnow,nsplit,ns;
 #ifndef NDEBUG
-	size_t		nt,ns;
+	size_t		nt;
 	
 	nt=t2->size1;
-	ns=g->size2;
 #endif
 	ng=g->size1;
+	ns=g->size2;
 
 	tnew=tnew2=0;
 
@@ -55,11 +55,13 @@ int pijs_gassist_a(const MATRIXG* g,const MATRIXF* t,const MATRIXF* t2,VECTORF* 
 		||(p5&&((p3->size1!=ng)||(p3->size2!=nt)))));
 	assert(!(nv>CONST_NV_MAX));
 	assert(memlimit);
+	if(ns<4)
+		ERRRET("Needs at least 4 samples to compute probabilities.")
 	//Defaults to 8GB memory usage
 	{
 		size_t mem1,mem2;
-		mem1=g->size1*g->size2+(2*t->size1*t->size2+2*t2->size1*t2->size2+p1->size+p2->size1*p2->size2*4)*FTYPEBITS/8;
-		mem2=t2->size1*2*nv*FTYPEBITS/8;
+		mem1=g->size1*g->size2*sizeof(GTYPE)+(2*t->size1*t->size2+2*t2->size1*t2->size2+p1->size+p2->size1*p2->size2*4)*sizeof(FTYPE);
+		mem2=t2->size1*2*nv*sizeof(FTYPE);
 		if((memlimit<=mem1)||!(nsplit=(memlimit-mem1)/mem2))
 			ERRRET("Memory limit lower than minimum memory needed. Try increasing your memory usage limit.")
 		nsplit=(size_t)ceil((float)ng/ceil((float)ng/(float)nsplit));

@@ -1,3 +1,8 @@
+0.4.1:
+	Extreme situation behavior:
+		Added error checking for few samples (<4).
+		Added special consideration for extremely skewed LLR during local FDR estimation.
+	Updated copyright notice.
 0.4.0:
 	Interface changes:
 		Removed trailing _a's for all interface function names.

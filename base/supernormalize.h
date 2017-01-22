@@ -1,4 +1,4 @@
-/* Copyright 2016 Lingfei Wang
+/* Copyright 2016, 2017 Lingfei Wang
  * 
  * This file is part of Findr.
  * 
@@ -118,7 +118,7 @@ int supernormalizer_byrow(MATRIXF* m);
 
 
 /**********************************************************************
- * Static functions
+ * Inline functions
  **********************************************************************/
 
 static inline void supernormalize_Pinv(size_t n,FTYPE* restrict Pinv)
@@ -145,7 +145,7 @@ static inline void supernormalizea_byrow_buffed(MATRIXF* m,gsl_permutation * con
 		supernormalize_byrow_buffed(m,p,Pinv);
 }
 
-static int supernormalizea_byrow(MATRIXF* m)
+static inline int supernormalizea_byrow(MATRIXF* m)
 {
 	if(m->size2<25)
 		return supernormalizef_byrow(m,(FTYPE)(1./gsl_pow_2((FTYPE)m->size2)));

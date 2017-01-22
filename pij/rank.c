@@ -1,4 +1,4 @@
-/* Copyright 2016 Lingfei Wang
+/* Copyright 2016, 2017 Lingfei Wang
  * 
  * This file is part of Findr.
  * 
@@ -95,12 +95,22 @@ static void pij_rank_llr(const MATRIXF* t,const MATRIXF* t2,MATRIXF* llr)
 int pij_rank_llrtopij_a_general(const MATRIXF* d,const MATRIXF* dconv,MATRIXF* ans,size_t ns,char nodiag,long nodiagshift)
 {
 	LOG(9,"Converting LLR to probabilities on per A basis.")
+	if(ns<=2)
+	{
+		LOG(0,"Needs at least 3 samples to compute probabilities.")
+		return 1;
+	}
 	return pij_llrtopij_a_convert_single(d,dconv,ans,1,ns-2,nodiag,nodiagshift);
 }
 
 int pij_rank_llrtopij_a(MATRIXF* ans,size_t ns,char nodiag,long nodiagshift)
 {
 	LOG(9,"Converting LLR to probabilities on per A basis.")
+	if(ns<=2)
+	{
+		LOG(0,"Needs at least 3 samples to compute probabilities.")
+		return 1;
+	}
 	return pij_llrtopij_a_convert_single_self(ans,1,ns-2,nodiag,nodiagshift);
 }
 
@@ -134,6 +144,9 @@ static int pij_rank_any(const MATRIXF* t,const MATRIXF* t2,MATRIXF* p,char nodia
 	
 	//Validation
 	assert((t2->size2==ns)&&(p->size1==ng)&&(p->size2==nt)&&nsplit&&memlimit);
+	
+	if(ns<=2)
+		ERRRET("Needs at least 3 samples to compute probabilities.")
 	{
 		size_t mem;
 		mem=(2*t->size1*t->size2+2*t2->size1*t2->size2+p->size1*p->size2)*FTYPEBITS/8;

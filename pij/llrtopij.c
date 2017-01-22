@@ -1,4 +1,4 @@
-/* Copyright 2016 Lingfei Wang
+/* Copyright 2016, 2017 Lingfei Wang
  * 
  * This file is part of Findr.
  * 
@@ -233,6 +233,13 @@ void pij_llrtopij_convert_histograms_buffed(gsl_histogram* hreal,VECTORD* vnull,
 	//Fill zeros with the one before
 	minpos=VECTORDF(max_index)(&vvnull.vector);
 	ndens=1/VECTORDF(get)(&vvnull.vector,minpos);
+	if(ndens==0)
+	{
+		vv1=VECTORDF(view_array)(hreal->bin,hreal->n);
+		VECTORDF(set_all)(&vv1.vector,1);
+		pij_llrtopij_histogram_to_central(hreal,hc);
+		return;
+	}
 	//Calculate true distribution ratio
 	VECTORDF(scale)(&vvnull.vector,-ndens);
 	VECTORDF(add_constant)(&vvnull.vector,1);

@@ -1,4 +1,4 @@
-/* Copyright 2016 Lingfei Wang
+/* Copyright 2016, 2017 Lingfei Wang
  * 
  * This file is part of Findr.
  * 
@@ -30,7 +30,7 @@ extern "C"
 {
 #endif
 
-/* The recommended wrapper conversion methods of step 1/2/3 data. Uses analytical generation of pdfs of null distribution.
+/* The recommended wrapper conversion methods of step 1-5 data. Uses analytical generation of pdfs of null distribution.
  * g:		(ng,ns)	Genotype data.
  * llr:		Log likelihood ratios of real data
  * p:		Output matrix of converted probabilities
