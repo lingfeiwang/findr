@@ -1,3 +1,5 @@
+0.5.0:
+	New function: reconstruction of directed acyclic graph from prior information of edge significance. For details, see library function netr_one_greedy, doc.pdf, or UPDATES in any interface.
 0.4.1:
 	Extreme situation behavior:
 		Added error checking for few samples (<4).

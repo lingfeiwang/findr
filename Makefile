@@ -14,8 +14,8 @@ URL_LIB_REL="$(URL_LIB)/releases"
 URL_BIN_REL="$(URL_BIN)/releases"
 URL_R_REL="$(URL_R)/releases"
 VERSION1=0
-VERSION2=4
-VERSION3=1
+VERSION2=5
+VERSION3=0
 LICENSE=AGPL-3
 LICENSE_FULL="GNU Affero General Public License, Version 3"
 LICENSE_URL="https://www.gnu.org/licenses/agpl-3.0"
@@ -152,13 +152,12 @@ Makefile.flags:
 	ldflags="$$ldflags -lgfortran"; \
 	echo "Testing local GSL" ; \
 	if [ -n "$(DIR_SRC_GSL)" ] ; then \
-		( dd=$$(pwd) && cd "$(DIR_SRC_GSL)" && ./configure && $(MAKE) && cd "$$dd" &> /dev/null ) || exit 1; \
 		echo "Testing -Wl,--whole-archive" ; \
 		ldflags2="$(DIR_SRC_GSL)/.libs/libgsl.a $(DIR_SRC_GSL)/cblas/.libs/libgslcblas.a"; \
+		$(LD) $$ldflags "-Wl,--whole-archive $$ldflags2 -Wl,--no-whole-archive" --shared -o $(TMP_FILE) &> /dev/null && \
+			ldflags2="-Wl,--whole-archive $$ldflags2 -Wl,--no-whole-archive"; \
 		$(LD) $$ldflags $$ldflags2 --shared -o $(TMP_FILE) &> /dev/null || \
-		( ldflags="-Wl,--whole-archive $$ldflags2 -Wl,--no-whole-archive" ; \
-		  $(LD) $$ldflags $$ldflags2 --shared -o $(TMP_FILE) &> /dev/null || \
-		    ( echo "Can't link to local GSL with right flag." ; exit 1; ) ) ; \
+		    ( echo "Can't link to embedded GSL with right flag." ; exit 1; ); \
 		cflags="-I $(DIR_SRC_GSL) $$cflags" ; \
 		ldflags="$$ldflags $$ldflags2" ; \
 	else \

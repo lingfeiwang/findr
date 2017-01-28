@@ -28,6 +28,7 @@
 #include "../base/lib.h"
 #include "../pij/gassist/gassist.h"
 #include "../pij/rank.h"
+#include "../netr/one.h"
 
 void external_R_lib_init(const int *loglv,const int *rs0,const int *nthread)
 {
@@ -108,9 +109,9 @@ void external_R_pijs_gassist_any(const int *ng,const int *nt,const int *ns,const
 #undef CLEANUP
 }
 
-
 void external_R_pijs_gassist(const int *ng,const int *nt,const int *ns,const int* g,const double* t,const double* t2,double* p1,double* p2,double* p3,double* p4,double* p5,const int* nv,const int* nodiag,int *ret)
 {
+	LOG(12,"R interface for external_R_pijs_gassist: ng=%i, nt=%i, ns=%i, nv=%i, nodiag=%i",*ng,*ng,*ns,*nv,*nodiag)
 	external_R_pijs_gassist_any(ng,nt,ns,g,t,t2,p1,p2,p3,p4,p5,nv,nodiag,ret,pijs_gassist);
 }
 
@@ -166,17 +167,20 @@ void external_R_pij_gassist_any(const int *ng,const int *nt,const int *ns,const 
 
 void external_R_pij_gassist(const int *ng,const int *nt,const int *ns,const int* g,const double* t,const double* t2,double* p,const int* nv,const int* nodiag,int *ret)
 {
+	LOG(12,"R interface for external_R_pij_gassist: ng=%i, nt=%i, ns=%i, nv=%i, nodiag=%i",*ng,*ng,*ns,*nv,*nodiag)
 	external_R_pij_gassist_any(ng,nt,ns,g,t,t2,p,nv,nodiag,ret,pij_gassist);
 }
 
 void external_R_pij_gassist_trad(const int *ng,const int *nt,const int *ns,const int* g,const double* t,const double* t2,double* p,const int* nv,const int* nodiag,int *ret)
 {
+	LOG(12,"R interface for external_R_pij_gassist_trad: ng=%i, nt=%i, ns=%i, nv=%i, nodiag=%i",*ng,*ng,*ns,*nv,*nodiag)
 	external_R_pij_gassist_any(ng,nt,ns,g,t,t2,p,nv,nodiag,ret,pij_gassist_trad);
 }
 
 void external_R_pij_rank(const int *ng,const int *nt,const int *ns,const double* t,const double* t2,double* p,const int* nodiag,int *ret)
 {
 #define	CLEANUP	CLEANMATF(mt)CLEANMATF(mt2)CLEANMATF(mp)
+	LOG(12,"R interface for external_R_pij_rank: ng=%i, nt=%i, ns=%i, nodiag=%i",*ng,*ng,*ns,*nodiag)
 	size_t	i,j;
 	char	nd=(char)(*nodiag);
 	size_t	ngv,ntv,nsv;
@@ -215,8 +219,46 @@ void external_R_pij_rank(const int *ng,const int *nt,const int *ns,const double*
 #undef CLEANUP
 }
 
-
-
+void external_R_netr_one_greedy(const int *nt,const double* p,const int* namax0,const int* nimax0,const int* nomax0,int* net,int *ret)
+{
+#define	CLEANUP	CLEANMATF(mp)CLEANMATUC(mnet)
+	LOG(12,"R interface for external_R_netr_one_greedy: nt=%i, namax=%i, nimax=%i, nomax=%i",*nt,*namax0,*nimax0,*nomax0)
+	size_t	i,j;
+	size_t	ntv=(size_t)*nt,ret2;
+	size_t	namax,nimax,nomax;
+	MATRIXF		*mp;
+	MATRIXUC	*mnet;
+	
+	mp=MATRIXFF(alloc)(ntv,ntv);
+	mnet=MATRIXUCF(alloc)(ntv,ntv);
+	if(!(mp&&mnet))
+	{
+		LOG(1,"Not enough memory.")
+		CLEANUP
+		*ret=1;
+		return;
+	}
+	
+	namax=(size_t)(*namax0<=0?-1:*namax0);
+	nimax=(size_t)(*nimax0<=0?-1:*nimax0);
+	nomax=(size_t)(*nomax0<=0?-1:*nomax0);
+	
+	//Copy data, R uses column major
+	for(i=0;i<ntv;i++)
+		for(j=0;j<ntv;j++)
+			MATRIXFF(set)(mp,i,j,(FTYPE)(p[j*ntv+i]));
+	
+	//Calculation
+	ret2=netr_one_greedy(mp,mnet,namax,nimax,nomax);
+	*ret=(ret2==0);
+	//Copy data back
+	if(!*ret)
+		for(i=0;i<ntv;i++)
+			for(j=0;j<ntv;j++)
+				net[j*ntv+i]=(int)MATRIXUCF(get)(mnet,i,j);
+	CLEANUP
+#undef CLEANUP
+}
 
 
 
