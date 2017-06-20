@@ -219,43 +219,23 @@ int pij_gassist_llrtopij_a_convert_self(MATRIXF* d,const MATRIXG* g,size_t nv,lo
 
 	//Construct null density histograms
 	{
-		FTYPE		dmin=FTYPE_MAX,dmax=FTYPE_MIN;
+		FTYPE		dmin,dmax;
 		if(nodiag)
-		{
-			FTYPE	dmin1,dmax1;
-			size_t	j;
-			long	tl;
-			VECTORFF(view)	vvl;
-			for(j=0;j<d->size1;j++)
-			{
-				tl=(long)j+nodiagshift;
-				if((tl>0)&&(tl+1<(long)d->size2))
-				{
-					vvl=MATRIXFF(subrow)(d,j,0,(size_t)tl);
-					VECTORFF(minmax)(&vvl.vector,&dmin1,&dmax1);
-					dmin=GSL_MIN(dmin,dmin1);
-					dmax=GSL_MAX(dmax,dmax1);
-					vvl=MATRIXFF(subrow)(d,j,(size_t)tl+1,d->size2-(size_t)tl-1);
-					VECTORFF(minmax)(&vvl.vector,&dmin1,&dmax1);
-				}
-				else if((tl<0)||((size_t)tl>=d->size2))
-				{
-					vvl=MATRIXFF(row)(d,j);
-					VECTORFF(minmax)(&vvl.vector,&dmin1,&dmax1);
-				}
-				else
-				{
-					vvl=MATRIXFF(subrow)(d,j,tl?0:1,d->size2-1);
-					VECTORFF(minmax)(&vvl.vector,&dmin1,&dmax1);
-				}
-				dmin=GSL_MIN(dmin,dmin1);
-				dmax=GSL_MAX(dmax,dmax1);
-			}
-		}
+			MATRIXFF(minmax_nodiag)(d,&dmin,&dmax,nodiagshift);
 		else
 			MATRIXFF(minmax)(d,&dmin,&dmax);
-		if((!(dmin>=0))||gsl_isnan(dmax)||gsl_isinf(dmax))
+		if((!(dmin>=0))||gsl_isnan(dmax))
 			ERRRET("Negative or NAN found in input data. It may invalidate follow up analysis. This may be due to incorrect previous steps.")
+		if(gsl_isinf(dmax))
+		{
+			LOG(5,"INF found in input data. It may invalidate follow up analysis. This may be due to incorrect previous steps or duplicate rows (by Spearman correlation).")
+			MATRIXFF(set_inf)(d,-1);
+			if(nodiag)
+				MATRIXFF(minmax_nodiag)(d,&dmin,&dmax,nodiagshift);
+			else
+				MATRIXFF(minmax)(d,&dmin,&dmax);
+			MATRIXFF(set_value)(d,-1,dmax);
+		}
 		h=pij_llrtopij_a_nullhist((double)dmax,nv,d->size2,n1c,n1d,n2c,n2d);
 		if(!h)
 			ERRRET("pij_llrtopij_a_nullhist failed.")
@@ -295,14 +275,6 @@ int pij_gassist_llrtopij_a_convert_self(MATRIXF* d,const MATRIXG* g,size_t nv,lo
 		MATRIXGF(countv_byrow_buffed)(g,vcount,vb4);
 		CLEANVECUC(vb4)
 	}
-	
-	
-	//Conversion
-	vv1=VECTORDF(view_array)(h[0]->range+1,nbin);
-	VECTORDF(memcpy)(vwidth,&vv1.vector);
-	vv1=VECTORDF(view_array)(h[0]->range,nbin);
-	VECTORDF(sub)(vwidth,&vv1.vector);
-	
 	
 	//Conversion
 	for(i=2;i<=nv;i++)
@@ -380,7 +352,7 @@ static inline int pij_gassist_llrtopij1_a(MATRIXF* d,const MATRIXG* g,size_t nv,
 static inline int pij_gassist_llrtopij2_a(MATRIXF* d,const MATRIXG* g,size_t nv,char nodiag,long nodiagshift)
 {
 	LOG(9,"Converting LLR to probabilities for step 2 on per A basis.")
-	assert(g->size>22);
+	assert(g->size2>2);
 	return pij_gassist_llrtopij_a_convert_self(d,g,nv,1,1,1,g->size2-2,nodiag,nodiagshift);
 }
 

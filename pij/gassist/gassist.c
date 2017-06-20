@@ -25,8 +25,94 @@
 #include "../../base/supernormalize.h"
 #include "../../base/threading.h"
 #include "llr.h"
+#include "llrtopv.h"
 #include "llrtopij.h"
 #include "gassist.h"
+
+
+int pijs_gassist_pv(const MATRIXG* g,const MATRIXF* t,const MATRIXF* t2,VECTORF* p1,MATRIXF* p2,MATRIXF* p3,MATRIXF* p4,MATRIXF* p5,size_t nv,size_t memlimit)
+{
+#define	CLEANUP			CLEANMATF(tnew)CLEANMATF(tnew2)
+	MATRIXF		*tnew,*tnew2;	//(nt,ns) Supernormalized transcript matrix
+	MATRIXFF(view)	mvt,mvp2,mvp3,mvp4,mvp5;
+	VECTORFF(view)	vvp1;
+	int			ret;
+	size_t		i,ng,ns,ngnow,nsplit;
+#ifndef NDEBUG
+	size_t		nt;
+	
+	nt=t2->size1;
+#endif
+	ns=g->size2;
+	ng=g->size1;
+
+	tnew=tnew2=0;
+
+	//Validation
+	assert(!((t->size1!=ng)||(t->size2!=ns)||(t2->size2!=ns)
+		||(p1&&(p1->size!=ng))
+		||(p2&&((p2->size1!=ng)||(p2->size2!=nt)))
+		||(p3&&((p2->size1!=ng)||(p2->size2!=nt)))
+		||(p4&&((p2->size1!=ng)||(p2->size2!=nt)))
+		||(p5&&((p3->size1!=ng)||(p3->size2!=nt)))));
+	assert(!(nv>CONST_NV_MAX));
+	assert(memlimit);
+	if(ns<4)
+		ERRRET("Needs at least 4 samples to compute p-values.")
+
+	{
+		size_t mem1,mem2;
+		mem1=g->size1*g->size2*sizeof(GTYPE)+(2*t->size1*t->size2+2*t2->size1*t2->size2+p1->size+p2->size1*p2->size2*4)*sizeof(FTYPE);
+		mem2=t2->size1*2*nv*sizeof(FTYPE);
+		if((memlimit<=mem1)||!(nsplit=(memlimit-mem1)/mem2))
+			ERRRET("Memory limit lower than minimum memory needed. Try increasing your memory usage limit.")
+		LOG(10,"Memory limit: %lu bytes.",memlimit)
+		nsplit=(size_t)ceil((float)ng/ceil((float)ng/(float)nsplit));
+		//if(nsplit<ng)
+			LOG(9,"Splitting %lu primary targets into groups of about size %lu.",ng,nsplit)
+	}
+	
+	tnew=MATRIXFF(alloc)(t->size1,t->size2);
+	tnew2=MATRIXFF(alloc)(t2->size1,t2->size2);
+	if(!(tnew&&tnew2))
+		ERRRET("Not enough memory.")
+
+	//Step 1: Supernormalization
+	LOG(9,"Supernormalizing...")
+	MATRIXFF(memcpy)(tnew,t);
+	ret=supernormalizea_byrow(tnew);
+	MATRIXFF(memcpy)(tnew2,t2);
+	ret=ret||supernormalizea_byrow(tnew2);
+	if(ret)
+		ERRRET("Supernormalization failed.")
+	
+	for(i=0;i<ng;i+=nsplit)
+	{
+		ngnow=GSL_MIN(ng-i,nsplit);
+
+		MATRIXGF(const_view) mvg=MATRIXGF(const_submatrix)(g,i,0,ngnow,g->size2);
+		mvt=MATRIXFF(submatrix)(tnew,i,0,ngnow,tnew->size2);
+		vvp1=VECTORFF(subvector)(p1,i,ngnow);
+		mvp2=MATRIXFF(submatrix)(p2,i,0,ngnow,p2->size2);
+		mvp3=MATRIXFF(submatrix)(p3,i,0,ngnow,p3->size2);
+		mvp4=MATRIXFF(submatrix)(p4,i,0,ngnow,p4->size2);
+		mvp5=MATRIXFF(submatrix)(p5,i,0,ngnow,p5->size2);
+		//Step 2: Log likelihood ratios from nonpermuted data
+		LOG(9,"Calculating real log likelihood ratios...")
+		if(pij_gassist_llr(&mvg.matrix,&mvt.matrix,tnew2,&vvp1.vector,&mvp2.matrix,&mvp3.matrix,&mvp4.matrix,&mvp5.matrix,nv))
+			ERRRET("pij_gassist_llr failed.")
+		//Step 3: Convert log likelihood ratios to p-values
+		LOG(9,"Converting log likelihood ratios into p-values...")
+		if((ret=pij_gassist_llrtopvs(&vvp1.vector,&mvp2.matrix,&mvp3.matrix,&mvp4.matrix,&mvp5.matrix,&mvg.matrix,nv)))
+			LOG(4,"Failed to convert all log likelihood ratios to p-values.")
+	}
+
+	//Cleanup
+	CLEANUP
+	return ret;
+#undef	CLEANUP		
+}
+
 
 int pijs_gassist_a(const MATRIXG* g,const MATRIXF* t,const MATRIXF* t2,VECTORF* p1,MATRIXF* p2,MATRIXF* p3,MATRIXF* p4,MATRIXF* p5,size_t nv,char nodiag,size_t memlimit)
 {
@@ -64,6 +150,7 @@ int pijs_gassist_a(const MATRIXG* g,const MATRIXF* t,const MATRIXF* t2,VECTORF* 
 		mem2=t2->size1*2*nv*sizeof(FTYPE);
 		if((memlimit<=mem1)||!(nsplit=(memlimit-mem1)/mem2))
 			ERRRET("Memory limit lower than minimum memory needed. Try increasing your memory usage limit.")
+		LOG(10,"Memory limit: %lu bytes.",memlimit)
 		nsplit=(size_t)ceil((float)ng/ceil((float)ng/(float)nsplit));
 		//if(nsplit<ng)
 			LOG(9,"Splitting %lu primary targets into groups of about size %lu.",ng,nsplit)

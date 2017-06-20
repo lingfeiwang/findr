@@ -1,3 +1,12 @@
+1.0.0:
+	New functions:
+		Included P-value computation for 4 tests in pijs_gassist_pv and correlation test in pij_rank_pv.
+		Included using continuous anchors (instead of discrete genotypes) for causal inference in pij(s)_cassist*.
+	Revisions:
+		Minor adjustments on adding fluctuations for supernormalized data when the number of samples is small (<30).
+		Updated logging.
+		Minor adjustments in conversion from LLR to local FDR.
+		Minor bug corrections on defensive programming.
 0.5.0:
 	New function: reconstruction of directed acyclic graph from prior information of edge significance. For details, see library function netr_one_greedy, doc.pdf, or UPDATES in any interface.
 0.4.1:

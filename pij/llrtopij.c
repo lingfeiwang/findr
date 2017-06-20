@@ -217,7 +217,15 @@ void pij_llrtopij_convert_histograms_buffed(gsl_histogram* hreal,VECTORD* vnull,
 	//Trim trailing 0s in histogram	
 	for(nb=nbin-1;nb&&(!hreal->bin[nb]);nb--);
 	nb++;
-	
+	//If all in smallest histogram, then output zeros
+	if(nb==1)
+	{
+		vv1=VECTORDF(view_array)(hreal->bin,hreal->n);
+		VECTORDF(set_all)(&vv1.vector,0);
+		pij_llrtopij_histogram_to_central(hreal,hc);
+		return;
+	}
+
 	ncut=GSL_MIN(nb/2,50);
 	assert(vb1->size>=hreal->n+2*ncut-1);
 	assert(vb2->size>=2*ncut+1);
@@ -263,9 +271,9 @@ void pij_llrtopij_convert_histograms_buffed(gsl_histogram* hreal,VECTORD* vnull,
 	vv1=VECTORDF(subvector)(vb1,0,hreal->n+2*ncut-1);
 	vv2=VECTORDF(subvector)(vb2,0,2*ncut+1);
 	pij_llrtopij_histogram_smoothen_buffed(hreal,psmooth,ncut,&vv1.vector,&vv2.vector);
-	
 	//Convert bounded histogram to central histogram
 	pij_llrtopij_histogram_to_central(hreal,hc);
+	
 }
 
 int pij_llrtopij_convert_histograms(gsl_histogram* hreal,VECTORD* vnull,gsl_histogram* hc)

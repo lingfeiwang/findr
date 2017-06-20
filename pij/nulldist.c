@@ -23,11 +23,9 @@
 #include <stdint.h>
 #include "../base/gsl/blas.h"
 #include "../base/gsl/math.h"
-#include "../base/gsl/sf.h"
 #include "../base/logger.h"
 #include "../base/macros.h"
 #include "../base/histogram.h"
-#include "../base/math.h"
 #include "../base/data_process.h"
 #include "nulldist.h"
 #pragma GCC diagnostic ignored "-Wunused-parameter"
@@ -159,20 +157,6 @@ int pij_nulldist_hist_pdf(const double* restrict range,size_t nbin,double* restr
 	CLEANUP
 	return 0;
 #undef	CLEANUP
-}
-
-double pij_nulldist_cdf_callback(double x,const void * param)
-{
-	/* CDF for y=z1/(z1+z2), z1~chi2(n1), z2~chi2(n2) is:
-	 * Gamma((n1+n2)/2)/Gamma(n1/2+1)/Gamma(n2)*y^(n1/2)*(2F1)(n1/2,1-n2/2,n1/2+1,y)
-	 */
-	const struct pij_nulldist_cdf_callback_param *p=param;
-	double	tx,t1,t2,t3;
-	t1=(double)p->n1/2;
-	t2=(double)p->n2/2;
-	tx=-math_sf_expminusone(-2*x);
-	t3=(math_sf_lngammahalf(p->n1+p->n2)-math_sf_lngammahalf(p->n2)-math_sf_lngammahalf(p->n1+2))+t1*log(tx)+log(gsl_sf_hyperg_2F1(t1,1-t2,t1+1,tx));
-	return exp(t3);	
 }
 
 

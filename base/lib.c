@@ -61,11 +61,25 @@ const char* LIBINFONAME(lib_name)()
 	return LIBNAME;
 }
 
+size_t LIBINFONAME(lib_version1)()
+{
+	return VERSION1;
+}
+
+size_t LIBINFONAME(lib_version2)()
+{
+	return VERSION2;
+}
+
+size_t LIBINFONAME(lib_version3)()
+{
+	return VERSION3;
+}
+
 const char* LIBINFONAME(lib_version)()
 {
 	return LIBVERSION;
 }
-
 
 
 

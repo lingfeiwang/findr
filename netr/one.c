@@ -43,12 +43,18 @@ size_t netr_one_greedy(const MATRIXF* p,MATRIXUC* net,size_t nam,size_t nimax,si
 	//Initialize
 	n=p->size1;
 	assert((n==p->size2)&&(n==net->size1)&&(n==net->size2));
-	assert(nimax&&nomax);
+	assert(nimax&&nomax&&nam);
 	ntot=n*(n-1);
 	nam=GSL_MIN(ntot/2,nam);
+	{
+		size_t	t1;
+		t1=GSL_MIN(nimax,nomax);
+		if(nam/n>=t1)
+			nam=t1*n;
+	}
 	ret=CYCLEF(init)(&cs,n,nam);
 	if(ret)
-		ERRRETV(0,"Failed to initialize cycle detection.")	
+		ERRRETV(0,"Failed to initialize cycle detection.")
 	cs.nim=nimax;
 	cs.nom=nomax;
 	v=VECTORFF(alloc)(ntot);

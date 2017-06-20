@@ -15,32 +15,34 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with Findr.  If not, see <http://www.gnu.org/licenses/>.
  */
-//This file contains library related functions
-#ifndef _HEADER_LIB_LIB_H_
-#define _HEADER_LIB_LIB_H_
+/* This file contains the conversion from log likelihood ratio to probabilities
+ *
+ */
+
+#ifndef _HEADER_LIB_PIJ_CASSIST_LLRTOPIJ_H_
+#define _HEADER_LIB_PIJ_CASSIST_LLRTOPIJ_H_
+#include "../../base/config.h"
+#include "../../base/types.h"
+#include "llrtopij_a.h"
 #ifdef __cplusplus
 extern "C"
 {
 #endif
 
 
-/* The library needs to be initialized before any other function is called,
- * to perform correctly with desired log level and random seed.
- * loglv:	Logging level, see logger.h.
- * rs:		Initial random seed. If rs=0, use current time as random seed.
- * nthread:	Maximum number of threads, If nthread=0, use default setting.
+/* Always return probability of step 1 is 1. This is useful when best eQTL are already selected in advance.
  */
-void lib_init(unsigned char loglv,unsigned long rs,size_t nthread);
+int pij_cassist_llrtopij1_1(VECTORF* p1);
 
-/* Returns library name
- */
-const char* lib_name();
-/* Returns library version in a.b.c format, or a, b, or c, for subfunctions ending with 1, 2, or 3 respectively.
- */
-const char* lib_version();
-size_t lib_version1();
-size_t lib_version2();
-size_t lib_version3();
+
+
+
+
+
+
+
+
+
 
 #ifdef __cplusplus
 }

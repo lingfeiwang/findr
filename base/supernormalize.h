@@ -101,7 +101,7 @@ int supernormalizef_byrow(MATRIXF* m,FTYPE fluc);
  * Auto fluctuations after deterministic supernormalization
  **********************************************************************/
  
-/* Only fluctuates when m->size2<25, with fluc=m->size2^(-2).
+/* Only fluctuates when m->size2<30, with fluc=2*m->size2^(-2).
  */
 static inline int supernormalizea_byrow_single(MATRIXF* m,const FTYPE* restrict Pinv);
 static inline void supernormalizea_byrow_buffed(MATRIXF* m,gsl_permutation * const *p,FTYPE* Pinv);
@@ -131,24 +131,24 @@ static inline void supernormalize_Pinv(size_t n,FTYPE* restrict Pinv)
 
 static inline int supernormalizea_byrow_single(MATRIXF* m,const FTYPE* restrict Pinv)
 {
-	if(m->size2<25)
-		return supernormalizef_byrow_single(m,Pinv,(FTYPE)(1./gsl_pow_2((FTYPE)m->size2)));
+	if(m->size2<30)
+		return supernormalizef_byrow_single(m,Pinv,(FTYPE)(2./gsl_pow_2((FTYPE)m->size2)));
 	else
 		return supernormalize_byrow_single(m,Pinv);
 }
 
 static inline void supernormalizea_byrow_buffed(MATRIXF* m,gsl_permutation * const *p,FTYPE* Pinv)
 {
-	if(m->size2<25)
-		supernormalizef_byrow_buffed(m,p,Pinv,(FTYPE)(1./gsl_pow_2((FTYPE)m->size2)));
+	if(m->size2<30)
+		supernormalizef_byrow_buffed(m,p,Pinv,(FTYPE)(2./gsl_pow_2((FTYPE)m->size2)));
 	else
 		supernormalize_byrow_buffed(m,p,Pinv);
 }
 
 static inline int supernormalizea_byrow(MATRIXF* m)
 {
-	if(m->size2<25)
-		return supernormalizef_byrow(m,(FTYPE)(1./gsl_pow_2((FTYPE)m->size2)));
+	if(m->size2<30)
+		return supernormalizef_byrow(m,(FTYPE)(2./gsl_pow_2((FTYPE)m->size2)));
 	else
 		return supernormalize_byrow(m);
 }

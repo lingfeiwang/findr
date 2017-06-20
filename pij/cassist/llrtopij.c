@@ -18,16 +18,10 @@
 #include "../../base/config.h"
 #include <stdlib.h>
 #include <stdio.h>
-#include <math.h>
-#include <float.h>
-#include <string.h>
 #include "../../base/logger.h"
-#include "../../base/macros.h"
-#include "../../base/data_process.h"
 #include "llrtopij.h"
 
-
-int pij_gassist_llrtopij1_1(VECTORF* p1)
+int pij_cassist_llrtopij1_1(VECTORF* p1)
 {
 	LOG(9,"Converting LLR to probabilities for step 1. Filling with 1.")
 	VECTORFF(set_all)(p1,1);

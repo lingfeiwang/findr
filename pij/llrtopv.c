@@ -15,24 +15,29 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with Findr.  If not, see <http://www.gnu.org/licenses/>.
  */
-#include "../../base/config.h"
+#include "../base/config.h"
 #include <stdlib.h>
 #include <stdio.h>
-#include <math.h>
-#include <float.h>
 #include <string.h>
-#include "../../base/logger.h"
-#include "../../base/macros.h"
-#include "../../base/data_process.h"
-#include "llrtopij.h"
+#include "../base/macros.h"
+#include "../base/threading.h"
+#include "llrtopv.h"
 
-
-int pij_gassist_llrtopij1_1(VECTORF* p1)
+void pij_llrtopvm(MATRIXF* p,size_t n1,size_t n2)
 {
-	LOG(9,"Converting LLR to probabilities for step 1. Filling with 1.")
-	VECTORFF(set_all)(p1,1);
-	return 0;
+	#pragma omp parallel
+	{
+		size_t	m1,m2;
+	
+		threading_get_startend(p->size1,&m1,&m2);
+		if(m2>m1)
+		{
+			MATRIXFF(view)	mvp=MATRIXFF(submatrix)(p,m1,0,m2-m1,p->size2);
+			pij_llrtopvm_block(&mvp.matrix,n1,n2);
+		}
+	}
 }
+
 
 
 

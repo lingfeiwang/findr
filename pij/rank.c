@@ -28,7 +28,8 @@
 #include "../base/data_process.h"
 #include "../base/supernormalize.h"
 #include "../base/threading.h"
-#include "../pij/llrtopij_a.h"
+#include "llrtopij_a.h"
+#include "llrtopv.h"
 #include "rank.h"
 
 /* Calculates the log likelihood ratio correlated v.s. uncorrelated models.
@@ -81,10 +82,72 @@ static void pij_rank_llr(const MATRIXF* t,const MATRIXF* t2,MATRIXF* llr)
 	}
 }
 
+/* Converts log likelihood ratios into p-values for ranked correlation test
+ * d:	MATRIXF of any size, as input of LLRs and also output of corresponding p-values
+ * ns:	Number of samples, to be used to calculate the null distribution
+ */
+static inline void pij_rank_llrtopv(MATRIXF* d,size_t ns)
+{
+	assert(ns>2);
+	pij_llrtopvm(d,1,ns-2);
+}
+
+int pij_rank_pv(const MATRIXF* t,const MATRIXF* t2,MATRIXF* p,size_t memlimit)
+{
+#define	CLEANUP		CLEANMATF(tnew)CLEANMATF(tnew2)
+	MATRIXF		*tnew,*tnew2;			//(nt,ns) Supernormalized transcript matrix
+	int			ret;
+	size_t		ng,nt,ns;
+	
+	ng=t->size1;
+	nt=t2->size1;
+	ns=t->size2;
+
+	tnew=tnew2=0;
+	
+	//Validation
+	assert((t2->size2==ns)&&(p->size1==ng)&&(p->size2==nt)&&memlimit);
+	if(ns<3)
+		ERRRET("Needs at least 3 samples to compute p-values.")
+	
+	{
+		size_t mem;
+		mem=(2*t->size1*t->size2+2*t2->size1*t2->size2+p->size1*p->size2)*FTYPEBITS/8;
+		if(memlimit<=mem)
+			ERRRET("Memory limit lower than minimum memory needed. Try increasing your memory usage limit.")
+		LOG(10,"Memory limit: %lu bytes.",memlimit)
+	}
+
+	tnew=MATRIXFF(alloc)(ng,ns);
+	tnew2=MATRIXFF(alloc)(nt,ns);
+	if(!(tnew&&tnew2))
+		ERRRET("Not enough memory.")
+
+	//Step 1: Supernormalization
+	LOG(9,"Supernormalizing...")
+	MATRIXFF(memcpy)(tnew,t);
+	ret=supernormalizea_byrow(tnew);
+	MATRIXFF(memcpy)(tnew2,t2);
+	ret=ret||supernormalizea_byrow(tnew2);
+	if(ret)
+		ERRRET("Supernormalization failed.")
+
+	//Step 2: Log likelihood ratios from nonpermuted data
+	LOG(9,"Calculating real log likelihood ratios...")
+	pij_rank_llr(tnew,tnew2,p);
+	//Step 3: Convert log likelihood ratios to probabilities
+	LOG(9,"Converting likelihood ratios into p-values...")
+	pij_rank_llrtopv(p,ns);
+
+	//Cleanup
+	CLEANUP
+	return 0;
+#undef	CLEANUP		
+}
+
 /* Convert LLR into probabilities per A. Uses pij_llrtopij_a_convert.
- * d:		(ng,nx) Source real LLRs to compare with null LLRs
- * dconv:	(ng,nt) LLRs to convert to probabilities. Can differ from d
- * ans:		(ng,nt) Output location of converted probabilities.
+ * ans:		(ng,nt) Source real LLRs to compare with null LLRs,
+ * 			also output location of converted probabilities.
  * ns:		Number of samples, used for calculation of null distribution
  * nodiag:	Whether diagonal elements of d should be ignored when converting
  * 			to probabilities
@@ -92,18 +155,7 @@ static void pij_rank_llr(const MATRIXF* t,const MATRIXF* t2,MATRIXF* llr)
  * 				For nodiagshift>0/<0, use upper/lower diagonals of corresponding id.
  * Return:	0 if succeed.
  */
-int pij_rank_llrtopij_a_general(const MATRIXF* d,const MATRIXF* dconv,MATRIXF* ans,size_t ns,char nodiag,long nodiagshift)
-{
-	LOG(9,"Converting LLR to probabilities on per A basis.")
-	if(ns<=2)
-	{
-		LOG(0,"Needs at least 3 samples to compute probabilities.")
-		return 1;
-	}
-	return pij_llrtopij_a_convert_single(d,dconv,ans,1,ns-2,nodiag,nodiagshift);
-}
-
-int pij_rank_llrtopij_a(MATRIXF* ans,size_t ns,char nodiag,long nodiagshift)
+static int pij_rank_llrtopij_a(MATRIXF* ans,size_t ns,char nodiag,long nodiagshift)
 {
 	LOG(9,"Converting LLR to probabilities on per A basis.")
 	if(ns<=2)
@@ -130,11 +182,9 @@ static int pij_rank_any(const MATRIXF* t,const MATRIXF* t2,MATRIXF* p,char nodia
 {
 #define	CLEANUP		CLEANMATF(tnew)CLEANMATF(tnew2)
 	MATRIXF		*tnew,*tnew2;			//(nt,ns) Supernormalized transcript matrix
-	MATRIXFF(view)	mvt,mvp;
 	VECTORFF(view)	vv;
 	int			ret;
-	size_t		ng,nt,ns,ngnow,nsplit=(size_t)-1;
-	size_t		i;
+	size_t		ng,nt,ns;
 	
 	ng=t->size1;
 	nt=t2->size1;
@@ -143,7 +193,7 @@ static int pij_rank_any(const MATRIXF* t,const MATRIXF* t2,MATRIXF* p,char nodia
 	tnew=tnew2=0;
 	
 	//Validation
-	assert((t2->size2==ns)&&(p->size1==ng)&&(p->size2==nt)&&nsplit&&memlimit);
+	assert((t2->size2==ns)&&(p->size1==ng)&&(p->size2==nt)&&memlimit);
 	
 	if(ns<=2)
 		ERRRET("Needs at least 3 samples to compute probabilities.")
@@ -152,6 +202,7 @@ static int pij_rank_any(const MATRIXF* t,const MATRIXF* t2,MATRIXF* p,char nodia
 		mem=(2*t->size1*t->size2+2*t2->size1*t2->size2+p->size1*p->size2)*FTYPEBITS/8;
 		if(memlimit<=mem)
 			ERRRET("Memory limit lower than minimum memory needed. Try increasing your memory usage limit.")
+		LOG(10,"Memory limit: %lu bytes.",memlimit)
 	}
 
 	tnew=MATRIXFF(alloc)(ng,ns);
@@ -168,24 +219,18 @@ static int pij_rank_any(const MATRIXF* t,const MATRIXF* t2,MATRIXF* p,char nodia
 	if(ret)
 		ERRRET("Supernormalization failed.")
 
-// 	nsplit=(size_t)ceil((float)ng/ceil((float)ng/(float)nsplit));
-	for(i=0;i<ng;i+=nsplit)
+	//Step 2: Log likelihood ratios from nonpermuted data
+	LOG(9,"Calculating real log likelihood ratios...")
+	pij_rank_llr(tnew,tnew2,p);
+	if(nodiag)
 	{
-		ngnow=GSL_MIN(ng-i,nsplit);
-		mvt=MATRIXFF(submatrix)(tnew,i,0,ngnow,tnew->size2);
-		mvp=MATRIXFF(submatrix)(p,i,0,ngnow,p->size2);
-		//Step 2: Log likelihood ratios from nonpermuted data
-		LOG(10,"Calculating real log likelihood ratios...")
-		pij_rank_llr(&mvt.matrix,tnew2,&mvp.matrix);
-		if(nodiag)
-		{
-			vv=MATRIXFF(superdiagonal)(&mvp.matrix,i);
-			VECTORFF(set_zero)(&vv.vector);
-		}
-		//Step 3: Convert log likelihood ratios to probabilities
-		if((ret=pij(&mvp.matrix,ns,nodiag,(long)i)))
-			LOG(1,"Failed to convert log likelihood ratios to probabilities.")
+		vv=MATRIXFF(diagonal)(p);
+		VECTORFF(set_zero)(&vv.vector);
 	}
+	//Step 3: Convert log likelihood ratios to probabilities
+	if((ret=pij(p,ns,nodiag,0)))
+		LOG(1,"Failed to convert log likelihood ratios to probabilities.")
+
 	//Cleanup
 	CLEANUP
 	return ret;

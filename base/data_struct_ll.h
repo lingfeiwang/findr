@@ -68,14 +68,13 @@ static inline size_t data_ll_insert(struct data_ll* ll,size_t val)
 	
 	if(ll->n==ll->nmax)
 	{
-		LOG(10,"Linked list insertion failed: linked list full.")
+		LOG(5,"Linked list insertion failed: linked list full.")
 		return (size_t)-1;
 	}
 	loc=2*ll->n;
 	ll->d[loc+1]=val;
 	return ll->n++;
 }
-
 
 static inline size_t data_ll_insert_after(struct data_ll* ll,size_t id,size_t val)
 {
@@ -88,7 +87,6 @@ static inline size_t data_ll_insert_after(struct data_ll* ll,size_t id,size_t va
 	ll->d[2*id]=loc;
 	return loc;
 }
-
 
 static inline size_t data_ll_insert_before(struct data_ll* ll,size_t id,size_t val)
 {

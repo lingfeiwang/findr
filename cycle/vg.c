@@ -260,13 +260,6 @@ int cycle_vg_add(struct cycle_vg_system* restrict vg,size_t v1,size_t v2)
 	return 0;
 }
 
-int cycle_vg_test(const struct cycle_vg_system* restrict vg,size_t v1,size_t v2)
-{
-	LOG(0,"Not implemented.")
-	return cycle_vg_add((struct cycle_vg_system*)vg,v1,v2);
-}
-
-
 void cycle_vg_extract_graph(const struct cycle_vg_system* restrict vg,MATRIXUC* g)
 {
 	size_t	i;

@@ -26,8 +26,10 @@
 
 #ifndef _HEADER_LIB_PIJ_NULLDIST_H_
 #define _HEADER_LIB_PIJ_NULLDIST_H_
+#include "../base/gsl/cdf.h"
 #include "../base/config.h"
 #include "../base/types.h"
+#include "../base/math.h"
 #ifdef __cplusplus
 extern "C"
 {
@@ -83,20 +85,20 @@ void pij_nulldist_calcpdf_buffed(long n1c,size_t n1d,long n2c,size_t n2d,const V
  */
 int pij_nulldist_hist_pdf(const double* restrict range,size_t nbin,double* restrict hist,size_t n1,size_t n2,size_t n);
 
-/* pij_nulldist_cdf_callback calculates the CDF of null distribution of the random variable:
- * x=-log(1-z1/(z1+z2))/2,
- * where z1 ~ chi2(n1) and z2 ~ chi2(n2).
- */
-//Parameter for pij_nulldist_cdf_callback
-struct pij_nulldist_cdf_callback_param
+// CDF for x=-log(1-y)/2, y=z1/(z1+z2), z1~chi2(n1), z2~chi2(n2), i.e. y~Beta(n1/2,n2/2)
+static inline double pij_nulldist_cdfQ(double x,const size_t n1,const size_t n2);
+
+/*****************************************************
+ * Inline functions
+ *****************************************************/
+
+static inline double pij_nulldist_cdfQ(double x,const size_t n1,const size_t n2)
 {
-	size_t	n1;
-	size_t	n2;
-};
-
-double pij_nulldist_cdf_callback(double x,const void * param);
-
-
+	double x1;
+	x1=gsl_cdf_beta_Q(-math_sf_expminusone(-2*x),(double)n1/2,(double)n2/2);
+	assert((x1>=0)&&(x1<=1));
+	return x1;
+}
 
 
 

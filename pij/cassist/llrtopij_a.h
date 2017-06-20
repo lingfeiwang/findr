@@ -15,32 +15,66 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with Findr.  If not, see <http://www.gnu.org/licenses/>.
  */
-//This file contains library related functions
-#ifndef _HEADER_LIB_LIB_H_
-#define _HEADER_LIB_LIB_H_
+/* This file contains the conversion from log likelihood ratio to probabilities
+ *
+ */
+
+#ifndef _HEADER_LIB_PIJ_CASSIST_LLRTOPIJ_A_H_
+#define _HEADER_LIB_PIJ_CASSIST_LLRTOPIJ_A_H_
+#include "../../base/config.h"
+#include "../../base/types.h"
+#include "../llrtopij_a.h"
 #ifdef __cplusplus
 extern "C"
 {
 #endif
 
+/* Converts four LLRs into probabilities together.
+ * Uses pij_cassit_llrtopij1_a to pij_cassit_llrtopij5_a.
+ * See above functions for parameter definitions.
+ * Return: 0 if all functions are successful.
+ */
+int pij_cassist_llrtopijs_a(VECTORF* p1,MATRIXF* p2,MATRIXF* p3,MATRIXF* p4,MATRIXF* p5,size_t ns,char nodiag);
 
-/* The library needs to be initialized before any other function is called,
- * to perform correctly with desired log level and random seed.
- * loglv:	Logging level, see logger.h.
- * rs:		Initial random seed. If rs=0, use current time as random seed.
- * nthread:	Maximum number of threads, If nthread=0, use default setting.
- */
-void lib_init(unsigned char loglv,unsigned long rs,size_t nthread);
 
-/* Returns library name
- */
-const char* lib_name();
-/* Returns library version in a.b.c format, or a, b, or c, for subfunctions ending with 1, 2, or 3 respectively.
- */
-const char* lib_version();
-size_t lib_version1();
-size_t lib_version2();
-size_t lib_version3();
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 #ifdef __cplusplus
 }

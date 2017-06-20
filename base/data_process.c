@@ -401,6 +401,51 @@ void MATRIXFF(permute_row_buffed)(MATRIXF* m,const gsl_permutation* perm,VECTORF
 		}
 }
 
+void MATRIXFF(minmax_nodiag)(const MATRIXF* d,FTYPE* restrict dmin,FTYPE* restrict dmax,long nodiagshift)
+{
+	FTYPE	dmin1,dmax1;
+	size_t	j;
+	long	tl;
+	
+	*dmin=FTYPE_MAX,*dmax=-FTYPE_MAX;
+	for(j=0;j<d->size1;j++)
+	{
+		tl=(long)j+nodiagshift;
+		if((tl>0)&&(tl+1<(long)d->size2))
+		{
+			VECTORFF(const_view)	vvl1=MATRIXFF(const_subrow)(d,j,0,(size_t)tl);
+			VECTORFF(const_view)	vvl2=MATRIXFF(const_subrow)(d,j,(size_t)tl+1,d->size2-(size_t)tl-1);
+			VECTORFF(minmax)(&vvl1.vector,&dmin1,&dmax1);
+			*dmin=GSL_MIN(*dmin,dmin1);
+			*dmax=GSL_MAX(*dmax,dmax1);
+			VECTORFF(minmax)(&vvl2.vector,&dmin1,&dmax1);
+		}
+		else if((tl<0)||((size_t)tl>=d->size2))
+		{
+			VECTORFF(const_view)	vvl=MATRIXFF(const_row)(d,j);
+			VECTORFF(minmax)(&vvl.vector,&dmin1,&dmax1);
+		}
+		else
+		{
+			VECTORFF(const_view)	vvl=MATRIXFF(const_subrow)(d,j,tl?0:1,d->size2-1);
+			VECTORFF(minmax)(&vvl.vector,&dmin1,&dmax1);
+		}
+		*dmin=GSL_MIN(*dmin,dmin1);
+		*dmax=GSL_MAX(*dmax,dmax1);
+	}
+}
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

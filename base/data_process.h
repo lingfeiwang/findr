@@ -191,6 +191,9 @@ static inline void MATRIXOF(set_nan)(MATRIXO* m,float val);
 static inline void MATRIXDF(set_inf)(MATRIXD* m,double val);
 static inline void MATRIXDF(set_nan)(MATRIXD* m,double val);
 
+// Sets all old value to new value
+static inline void MATRIXFF(set_value)(MATRIXF* m,FTYPE vold,FTYPE vnew);
+
 /* Locates the first not number in a vector/matrix, and return its location.
  * If not found, return -1.
  */
@@ -345,6 +348,22 @@ static inline void MATRIXFF(fluc)(MATRIXF* m,FTYPE fluc);
  * 			x*(1+y*fluc), where y is uniformly distributed in [-1,1)
  */
 static inline void VECTORFF(fluc)(VECTORF* v,FTYPE fluc);
+
+void MATRIXFF(minmax_nodiag)(const MATRIXF* d,FTYPE* restrict dmin,FTYPE* restrict dmax,long nodiagshift);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 static inline void MATRIXFF(flatten)(const MATRIXF* m,VECTORF* v)
 {
@@ -636,6 +655,18 @@ static inline void MATRIXDF(set_nan)(MATRIXD* m,double val)
 	MATRIXDF(set_cond)(m,gsl_isnan,val);
 }
 
+
+static inline void MATRIXFF(set_value)(MATRIXF* m,FTYPE vold,FTYPE vnew)
+{
+	size_t	i,j;
+	for(i=0;i<m->size1;i++)
+		for(j=0;j<m->size2;j++)
+			if(MATRIXFF(get)(m,i,j)==vold)
+				MATRIXFF(set)(m,i,j,vnew);
+}
+
+
+
 static inline void MATRIXFF(cov1)(const MATRIXF* m,MATRIXF* cov)
 {
 	size_t i,j;
@@ -808,20 +839,6 @@ static inline void VECTORFF(fluc)(VECTORF* v,FTYPE fluc)
 	for(i=0;i<v->size;i++)
 		VECTORFF(ptr)(v,i)[0]*=(FTYPE)(1+(2*random_uniform()-1)*fluc);
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
