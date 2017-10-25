@@ -56,7 +56,7 @@ struct pij_gassist_llr_block_buffed_params{
 	//[nv](ng,nt) Buffer matrix
 	MATRIXF**		mb1;
 };
-			
+
 void pij_gassist_llr_ratioandmean_1v1(const MATRIXG* g,const MATRIXF* t1,const MATRIXF* t2,MATRIXF* mratio,MATRIXF* mmean1,MATRIXF* mmean2,size_t nv)
 {
 	size_t	ng=g->size1;

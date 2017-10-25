@@ -51,36 +51,36 @@ static void pij_cassist_llr_block(const MATRIXF* g,const MATRIXF* t,const MATRIX
 	assert(nt&&(llr2->size2==nt)&&(llr3->size2==nt)&&(llr4->size2==nt)&&(llr5->size2==nt));
 	assert(g->size2&&(t->size2==g->size2)&&(t2->size2==g->size2));
 	
-	//llr1=rho_AB
+	//llr1=rho_EA
 	MATRIXFF(cov2_1v1_bounded)(g,t,llr1);
-	//llr2=rho_AC
+	//llr2=rho_EB
 	MATRIXFF(cov2_bounded)(g,t2,llr2);
-	//llr5=rho_BC
+	//llr5=rho_AB
 	MATRIXFF(cov2_bounded)(t,t2,llr5);
 
-	//llr4=rho_AB*rho_AC
+	//llr4=rho_EA*rho_EB
 	MATRIXFF(memcpy)(llr4,llr2);
 	for(i=0;i<ng;i++)
 	{
 		vv=MATRIXFF(row)(llr4,i);
 		VECTORFF(scale)(&vv.vector,VECTORFF(get)(llr1,i));
 	}
-	//llr4=(rho_BC-rho_AB*rho_AC)^2
+	//llr4=(rho_AB-rho_EA*rho_EB)^2
 	MATRIXFF(sub)(llr4,llr5);
 	MATRIXFF(mul_elements)(llr4,llr4);
-	//llr2=1-rho_AC^2
+	//llr2=1-rho_EB^2
 	MATRIXFF(mul_elements)(llr2,llr2);
 	MATRIXFF(scale)(llr2,-1);
 	MATRIXFF(add_constant)(llr2,1);
-	//llr5=1-rho_BC^2
+	//llr5=1-rho_AB^2
 	MATRIXFF(mul_elements)(llr5,llr5);
 	MATRIXFF(scale)(llr5,-1);
 	MATRIXFF(add_constant)(llr5,1);
-	//llr1=1-rho_AB^2
+	//llr1=1-rho_EA^2
 	VECTORFF(mul)(llr1,llr1);
 	VECTORFF(scale)(llr1,-1);
 	VECTORFF(add_constant)(llr1,1);
-	//llr4=(1-rho_AB^2)*(1-rho_AC^2)-(rho_BC-rho_AB*rho_AC)^2, using llr3 as buff
+	//llr4=(1-rho_EA^2)*(1-rho_EB^2)-(rho_AB-rho_EA*rho_EB)^2, using llr3 as buffer
 	MATRIXFF(memcpy)(llr3,llr2);
 	for(i=0;i<ng;i++)
 	{
