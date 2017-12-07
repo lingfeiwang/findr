@@ -1,3 +1,5 @@
+1.0.5:
+	Updated Makefiles to account for different make environments.
 1.0.1:
 	Bug correction:
 		Updated LDFLAGS for R interface.

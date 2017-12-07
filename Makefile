@@ -15,7 +15,7 @@ URL_BIN_REL="$(URL_BIN)/releases"
 URL_R_REL="$(URL_R)/releases"
 VERSION1=1
 VERSION2=0
-VERSION3=3
+VERSION3=5
 LICENSE=AGPL-3
 LICENSE_FULL="GNU Affero General Public License, Version 3"
 LICENSE_URL="https://www.gnu.org/licenses/agpl-3.0"
@@ -106,7 +106,7 @@ distclean: clean
 
 install-lib: SHELL:=/bin/bash
 install-lib: all
-	@umask 0022 && mkdir -p $(DIR_INSTALL_LIB) && \
+	umask 0022 && mkdir -p $(DIR_INSTALL_LIB) && \
 	cp $(LIB_DPRODUCT) $(DIR_INSTALL_LIB)/ && \
 	chmod 0755 $(DIR_INSTALL_LIB)/$(notdir $(LIB_DPRODUCT)) && \
 	if [ "$$(uname)" == "Linux" ]; then \
@@ -120,12 +120,12 @@ install-lib: all
 
 install-inc: SHELL:=/bin/bash
 install-inc: $(LIB_CONFIG)
-	@umask 0022 && mkdir -p $(DIR_INSTALL_INC) && \
+	umask 0022 && mkdir -p $(DIR_INSTALL_INC) && \
 	for dname in $(INC_INSTALL_DIRS); do \
 		mkdir -p $(DIR_INSTALL_INC)/$$dname || exit 1; \
 	done
 # Then Files
-	@umask 0022 && for fname in $(INC_INSTALL_FILES); do \
+	umask 0022 && for fname in $(INC_INSTALL_FILES); do \
 		cp $$fname $(DIR_INSTALL_INC)/$$fname || exit 1; \
 		chmod 0644 $(DIR_INSTALL_INC)/$$fname || exit 1; \
 	done
@@ -138,35 +138,35 @@ uninstall:
 TMP_FILE=.tmp
 Makefile.flags:
 	@echo "Testing gcc"
-	@$(CC) --version &> /dev/null || ( echo "GCC not found. Please download the latest GCC or specify its location in CC variable in Makefile."; exit 1; )
-	@gver=$$($(CC) --version) ; \
+	if ! $(CC) --version > /dev/null 2>&1; then echo "GCC not found. Please download the latest GCC or specify its location in CC variable in Makefile."; exit 1; fi
+	gver="$$($(CC) --version)"; \
 	t1=$$(echo "$$gver" | grep -io gcc); \
 	if ! [ -n "$$t1" ]; then echo "Invalid GCC version. Please download the latest GCC."; exit 1; fi
-	@cflags="$(CFLAGS) $(CFLAGS_EXTRA) $(CFLAGSI) -fopenmp -ggdb -fPIC -Wall -Wextra -Wconversion -Wsign-conversion -Wundef -Wendif-labels -std=c99 -pedantic-errors $(OPTFLAGS)"; \
+	cflags="$(CFLAGS) $(CFLAGS_EXTRA) $(CFLAGSI) -fopenmp -ggdb -fPIC -Wall -Wextra -Wconversion -Wsign-conversion -Wundef -Wendif-labels -std=c99 -pedantic-errors $(OPTFLAGS)"; \
 	ldflags="$(LDFLAGS) $(LDFLAGS_EXTRA) -L $(PREFIX)/lib -L /usr/local/lib -L /usr/lib -fopenmp -lm -shared -lc"; \
 	echo "Testing test method"; \
-	$(LD) $$ldflags -o $(TMP_FILE) &> /dev/null || \
-	( echo "Linking with default flags failed."; exit 1; ) ; \
+	if ! $(LD) $$ldflags -o $(TMP_FILE) > /dev/null 2>&1; then \
+	echo "Linking with default flags failed."; exit 1; fi; \
 	echo "Testing gfortran"; \
-	$(LD) $$ldflags -lgfortran -o $(TMP_FILE) &> /dev/null && \
+	$(LD) $$ldflags -lgfortran -o $(TMP_FILE) > /dev/null 2>&1 && \
 	ldflags="$$ldflags -lgfortran"; \
 	echo "Testing local GSL" ; \
 	if [ -n "$(DIR_SRC_GSL)" ] ; then \
 		echo "Testing -Wl,--whole-archive" ; \
 		ldflags2="$(DIR_SRC_GSL)/.libs/libgsl.a $(DIR_SRC_GSL)/cblas/.libs/libgslcblas.a"; \
-		$(LD) $$ldflags "-Wl,--whole-archive $$ldflags2 -Wl,--no-whole-archive" --shared -o $(TMP_FILE) &> /dev/null && \
+		$(LD) $$ldflags "-Wl,--whole-archive $$ldflags2 -Wl,--no-whole-archive" --shared -o $(TMP_FILE) > /dev/null 2>&1 && \
 			ldflags2="-Wl,--whole-archive $$ldflags2 -Wl,--no-whole-archive"; \
-		$(LD) $$ldflags $$ldflags2 --shared -o $(TMP_FILE) &> /dev/null || \
-		    ( echo "Can't link to embedded GSL with right flag." ; exit 1; ); \
+		if ! $(LD) $$ldflags $$ldflags2 --shared -o $(TMP_FILE) > /dev/null 2>&1; then \
+			echo "Can't link to embedded GSL with right flag." ; exit 1; fi; \
 		cflags="-I $(DIR_SRC_GSL) $$cflags" ; \
 		ldflags="$$ldflags $$ldflags2" ; \
 	else \
 		ldflags="$$ldflags -lgsl -lgslcblas"; \
-		$(LD) $$ldflags --shared -o $(TMP_FILE) &> /dev/null || \
-		( echo "Link to installed GSL failed."; exit 1; ) ;\
+		if ! $(LD) $$ldflags --shared -o $(TMP_FILE) > /dev/null 2>&1; then \
+		echo "Link to installed GSL failed."; exit 1; fi; \
 	fi ; \
 	echo "Testing -Wl,--no-as-needed" ; \
-	$(LD) -Wl,--no-as-needed $$ldflags --shared -o $(TMP_FILE) &> /dev/null && \
+	$(LD) -Wl,--no-as-needed $$ldflags --shared -o $(TMP_FILE) > /dev/null 2>&1 && \
 	ldflags="-Wl,--no-as-needed $$ldflags"; \
 	echo "CFLAGS=$$cflags" > $@ && \
 	echo "LDFLAGS=$$ldflags" >> $@ && \
