@@ -1,4 +1,4 @@
-/* Copyright 2016, 2017 Lingfei Wang
+/* Copyright 2016-2018 Lingfei Wang
  * 
  * This file is part of Findr.
  * 
@@ -66,19 +66,17 @@ int pijs_gassist_pv(const MATRIXG* g,const MATRIXF* t,const MATRIXF* t2,VECTORF*
  * 		nt:	Number of genes with expression data for B
  * 		ns:	Number of samples.
  */
-int pijs_gassist_a(const MATRIXG* g,const MATRIXF* t,const MATRIXF* t2,VECTORF* p1,MATRIXF* p2,MATRIXF* p3,MATRIXF* p4,MATRIXF* p5,size_t nv,char nodiag,size_t memlimit);
 int pijs_gassist(const MATRIXG* g,const MATRIXF* t,const MATRIXF* t2,VECTORF* p1,MATRIXF* p2,MATRIXF* p3,MATRIXF* p4,MATRIXF* p5,size_t nv,char nodiag,size_t memlimit);
 
-/* Estimates the probability of A->B from genotype and expression data with defaults combination of tests. Uses results from pijs_gassist_tot or pijs_gassist_a. Variables have the same definitions except:
+/* Estimates the probability of A->B from genotype and expression data with defaults combination of tests. Uses results from pijs_gassist. Variables have the same definitions except:
  * ans:	(ng,nt) Predicted probability of A->B based on default combination of 5 tests. The default combination is (p2*p5+p4)/2. Note: this combination does not include p1.
  * Return:	0 on sucess
  */
-int pij_gassist_a(const MATRIXG* g,const MATRIXF* t,const MATRIXF* t2,MATRIXF* ans,size_t nv,char nodiag,size_t memlimit);
 int pij_gassist(const MATRIXG* g,const MATRIXF* t,const MATRIXF* t2,MATRIXF* ans,size_t nv,char nodiag,size_t memlimit);
 
 /* Estimates the probability of A->B from genotype and expression data with traditional causal inference method.
  * NOTE:	This is not and is not intended as a loyal reimplementation of the Trigger R package. Instead, it aims at reusing methods and tests of Findr to produce inferences that mimicks the three tests performed by Trigger. Many implementational details are different between this function and Trigger, althrough a significant (but not full) overlap has been observed in existing studies. This method does not include p1.
- * Inputs and ouputs are the same as function pij_gassist_a.
+ * Inputs and ouputs are the same as function pij_gassist.
  */
 int pij_gassist_trad(const MATRIXG* g,const MATRIXF* t,const MATRIXF* t2,MATRIXF* ans,size_t nv,char nodiag,size_t memlimit);
 

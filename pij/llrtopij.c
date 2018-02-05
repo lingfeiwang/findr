@@ -1,4 +1,4 @@
-/* Copyright 2016, 2017 Lingfei Wang
+/* Copyright 2016-2018 Lingfei Wang
  * 
  * This file is part of Findr.
  * 
@@ -28,11 +28,11 @@
 #include "../base/macros.h"
 #include "../base/data_process.h"
 #include "../base/histogram.h"
-#include "nullmodeler.h"
-#include "nullsampler.h"
+#include "../base/threading.h"
 #include "nullhist.h"
 #include "llrtopij.h"
-#pragma GCC diagnostic ignored "-Wunused-parameter"
+
+// #pragma GCC diagnostic ignored "-Wunused-parameter"
 
 /* Smoothen true ratio histogram to make it monotonically increasing
  * Method:	1.	Construct increasing upper bound histogram (hup)
@@ -288,6 +288,289 @@ int pij_llrtopij_convert_histograms(gsl_histogram* hreal,VECTORD* vnull,gsl_hist
 	return 0;
 #undef	CLEANUP
 }
+
+FTYPE pij_llrtopij_llrmatmax(MATRIXF* d,char nodiag)
+{
+	FTYPE	dmin,dmax;
+	if(nodiag)
+		MATRIXFF(minmax_nodiag)(d,&dmin,&dmax,0);
+	else
+		MATRIXFF(minmax)(d,&dmin,&dmax);
+	if((!(dmin>=0))||gsl_isnan(dmax))
+	{
+		LOG(1,"Negative or NAN found in input data. It may invalidate follow up analysis. This may be due to incorrect previous steps.")
+		return 0;
+	}
+	if(gsl_isinf(dmax))
+	{
+		LOG(5,"INF found in input data. It may invalidate follow up analysis. This may be due to incorrect previous steps or duplicate rows. Now regard INFs as largest non-INF value.")
+		MATRIXFF(set_inf)(d,-1);
+		if(nodiag)
+			MATRIXFF(minmax_nodiag)(d,&dmin,&dmax,0);
+		else
+			dmax=MATRIXFF(max)(d);
+		MATRIXFF(set_value)(d,-1,dmax);
+	}
+	return dmax;
+}
+
+FTYPE pij_llrtopij_llrvecmax(VECTORF* d)
+{
+	FTYPE	dmin,dmax;
+	VECTORFF(minmax)(d,&dmin,&dmax);
+	if((!(dmin>=0))||gsl_isnan(dmax))
+	{
+		LOG(1,"Negative or NAN found in input data. It may invalidate follow up analysis. This may be due to incorrect previous steps.")
+		return 0;
+	}
+	if(gsl_isinf(dmax))
+	{
+		LOG(5,"INF found in input data. It may invalidate follow up analysis. This may be due to incorrect previous steps or duplicate rows. Now regard INFs as largest non-INF value.")
+		VECTORFF(set_inf)(d,-1);
+		dmax=VECTORFF(max)(d);
+		VECTORFF(set_value)(d,-1,dmax);
+	}
+	return dmax;
+}
+
+
+int pij_llrtopij_convert_single(const MATRIXF* d,const MATRIXF* dconv,MATRIXF* ans,size_t n1,size_t n2,char nodiag,long nodiagshift)
+{
+#define	CLEANUP	CLEANHIST(hreal)CLEANHIST(hc)\
+				CLEANHIST(h)CLEANVECD(vb1)CLEANVECD(vb2)
+	size_t		ng=d->size1;
+	long		k;
+	size_t		j,nbin;
+	gsl_histogram *h,*hreal,*hc;
+	VECTORD		*vb1,*vb2;
+	
+	h=0;
+	hreal=hc=0;
+	vb1=0;
+	vb2=0;
+	//Validity checks
+	assert((dconv->size1==ng)&&(ans->size1==ng)&&(ans->size2==dconv->size2));
+
+	//Construct null density histograms
+	{
+		FTYPE		dmin,dmax;
+		MATRIXFF(minmax)(d,&dmin,&dmax);
+		if((!(dmin>=0))||gsl_isnan(dmax)||gsl_isinf(dmax))
+			ERRRET("Negative or NAN found in input data. It may invalidate follow up analysis. This may be due to incorrect previous steps.")
+		h=pij_nullhist_single((double)dmax,d->size2,n1,n2);
+		if(!h)
+			ERRRET("pij_nullhist_single failed.")
+		nbin=h->n;
+	}
+	
+	//Prepare for real histogram
+	hreal=gsl_histogram_clone(h);
+	hc=gsl_histogram_alloc(hreal->n+2);
+	if(!(hreal&&hc))
+		ERRRET("Not enough memory.");
+	if(pij_llrtopij_convert_histograms_make_buffs(nbin,&vb1,&vb2))
+		ERRRET("pij_llrtopij_convert_histograms_make_buffs failed.")
+	
+	//Conversion
+	{
+		VECTORDF(view)	vv1,vvreal;
+		VECTORFF(view)	vva;
+		VECTORD	*vwidth,*vnull;
+		vwidth=VECTORDF(alloc)(nbin);
+		vnull=VECTORDF(alloc)(nbin);
+		if(!(vwidth&&vnull))
+		{
+			CLEANVECD(vwidth)CLEANVECD(vnull)
+			ERRRET("Not enough memory.")
+		}
+		vv1=VECTORDF(view_array)(h->range+1,nbin);
+		VECTORDF(memcpy)(vwidth,&vv1.vector);
+		vv1=VECTORDF(view_array)(h->range,nbin);
+		VECTORDF(sub)(vwidth,&vv1.vector);
+		vvreal=VECTORDF(view_array)(hreal->bin,nbin);
+		vv1=VECTORDF(view_array)(h->bin,nbin);
+		for(j=0;j<ng;j++)
+		{
+			VECTORFF(const_view)	vvd=MATRIXFF(const_row)(dconv,j);
+			VECTORDF(memcpy)(vnull,&vv1.vector);
+			memcpy(hreal->range,h->range,(nbin+1)*sizeof(*hreal->range));
+			memset(hreal->bin,0,nbin*sizeof(*hreal->bin));
+			//Construct real histogram
+			if(nodiag&&((long)j+nodiagshift>=0)&&((long)j+nodiagshift<(long)d->size2))
+			{
+				for(k=(long)j+nodiagshift-1;k>=0;k--)
+					gsl_histogram_increment(hreal,MATRIXFF(get)(d,j,(size_t)k));
+				for(k=(long)j+nodiagshift+1;k<(long)d->size2;k++)
+					gsl_histogram_increment(hreal,MATRIXFF(get)(d,j,(size_t)k));
+				VECTORDF(scale)(&vvreal.vector,1./(double)(d->size2-1));
+			}
+			else
+			{
+				for(k=0;k<(long)d->size2;k++)
+					gsl_histogram_increment(hreal,MATRIXFF(get)(d,j,(size_t)k));
+				VECTORDF(scale)(&vvreal.vector,1./(double)(d->size2));
+			}
+			//Convert to density histogram
+			VECTORDF(div)(&vvreal.vector,vwidth);
+			//Convert to probability central histogram
+			pij_llrtopij_convert_histograms_buffed(hreal,vnull,hc,vb1,vb2);
+			//Convert likelihoods to probabilities
+			vva=MATRIXFF(row)(ans,j);
+			pij_llrtopij_histogram_interpolate_linear(hc,&vvd.vector,&vva.vector);
+		}
+		CLEANVECD(vwidth)CLEANVECD(vnull)
+	}
+	CLEANUP
+	return 0;
+#undef	CLEANUP
+}
+
+int pij_llrtopij_convert_single_self(MATRIXF* d,size_t n1,size_t n2,char nodiag,long nodiagshift)
+{
+#define	CLEANUP	CLEANAMHIST(hreal,nth)CLEANAMHIST(hc,nth)\
+				CLEANHIST(h)CLEANMATD(mb1)CLEANMATD(mb2)CLEANMATD(mnull)CLEANMATF(mb3)CLEANVECD(vwidth)
+		
+	size_t		ng=d->size1;
+	size_t		i,nbin;
+	gsl_histogram	*h;
+	MATRIXD		*mb1,*mb2,*mnull;
+	MATRIXF		*mb3;
+	VECTORD		*vwidth;
+	VECTORDF(view)	vv1;
+	size_t		nth;
+	
+	h=0;
+	mb1=mb2=mnull=0;
+	mb3=0;
+	vwidth=0;
+	//Validity checks
+	{
+		int	nth0=omp_get_max_threads();
+		assert(nth0>0);
+		nth=(size_t)nth0;
+	}
+	
+	
+	AUTOCALLOC(gsl_histogram*,hreal,nth,64)
+	AUTOCALLOC(gsl_histogram*,hc,nth,64)
+	if(!(hreal&&hc))
+		ERRRET("Not enough memory.");
+
+	//Construct null density histograms
+	{
+		FTYPE		dmin,dmax;
+		if(nodiag)
+			MATRIXFF(minmax_nodiag)(d,&dmin,&dmax,nodiagshift);
+		else
+			MATRIXFF(minmax)(d,&dmin,&dmax);
+		if((!(dmin>=0))||gsl_isnan(dmax))
+			ERRRET("Negative or NAN found in input data. It may invalidate follow up analysis. This may be due to incorrect previous steps.")
+		if(gsl_isinf(dmax))
+		{
+			LOG(5,"INF found in input data. It may invalidate follow up analysis. This may be due to incorrect previous steps or duplicate rows (by Spearman correlation).")
+			MATRIXFF(set_inf)(d,-1);
+			if(nodiag)
+				MATRIXFF(minmax_nodiag)(d,&dmin,&dmax,nodiagshift);
+			else
+				MATRIXFF(minmax)(d,&dmin,&dmax);
+			MATRIXFF(set_value)(d,-1,dmax);
+		}
+		h=pij_nullhist_single((double)dmax,d->size2,n1,n2);
+		if(!h)
+			ERRRET("pij_nullhist_single failed.")
+		nbin=h->n;
+	}
+	//Memory allocation
+	{
+		size_t	n1,n2;
+		pij_llrtopij_convert_histograms_get_buff_sizes(nbin,&n1,&n2);
+		mb1=MATRIXDF(alloc)(nth,n1);
+		mb2=MATRIXDF(alloc)(nth,n2);
+		mnull=MATRIXDF(alloc)(nth,nbin);
+		mb3=MATRIXFF(alloc)(nth,d->size2);
+		vwidth=VECTORDF(alloc)(nbin);
+		if(!(mb1&&mb2&&mnull&&mb3&&vwidth))
+			ERRRET("Not enough memory.")
+	}
+	
+	//Prepare for real histogram
+	{
+		int	ret;
+		for(i=0,ret=1;i<nth;i++)
+		{
+			hreal[i]=gsl_histogram_clone(h);
+			hc[i]=gsl_histogram_alloc(hreal[i]->n+2);
+			ret=ret&&hreal[i]&&hc[i];
+		}
+		if(!ret)
+			ERRRET("Not enough memory.");
+	}
+	
+	//Conversion
+	vv1=VECTORDF(view_array)(h->range+1,nbin);
+	VECTORDF(memcpy)(vwidth,&vv1.vector);
+	vv1=VECTORDF(view_array)(h->range,nbin);
+	VECTORDF(sub)(vwidth,&vv1.vector);
+	vv1=VECTORDF(view_array)(h->bin,nbin);
+	#pragma omp parallel
+	{
+		size_t	ng1,ng2,id;
+		size_t	j;
+		long	k;
+		VECTORDF(view)	vvreal,vvnull,vvb1,vvb2;
+		VECTORFF(view)	vvb3,vva;
+	
+		id=(size_t)omp_get_thread_num();
+		vvreal=VECTORDF(view_array)(hreal[id]->bin,nbin);
+		vvnull=MATRIXDF(row)(mnull,id);
+		vvb1=MATRIXDF(row)(mb1,id);
+		vvb2=MATRIXDF(row)(mb2,id);
+		vvb3=MATRIXFF(row)(mb3,id);
+		
+		threading_get_startend(ng,&ng1,&ng2);
+		
+		for(j=ng1;j<ng2;j++)
+		{
+			MATRIXFF(get_row)(&vvb3.vector,d,j);
+			VECTORDF(memcpy)(&vvnull.vector,&vv1.vector);
+			memcpy(hreal[id]->range,h->range,(nbin+1)*sizeof(*hreal[id]->range));
+			memset(hreal[id]->bin,0,nbin*sizeof(*hreal[id]->bin));
+			//Construct real histogram
+			if(nodiag&&((long)j+nodiagshift>=0)&&((long)j+nodiagshift<(long)d->size2))
+			{
+				for(k=(long)j+nodiagshift-1;k>=0;k--)
+					gsl_histogram_increment(hreal[id],MATRIXFF(get)(d,j,(size_t)k));
+				for(k=(long)j+nodiagshift+1;k<(long)d->size2;k++)
+					gsl_histogram_increment(hreal[id],MATRIXFF(get)(d,j,(size_t)k));
+				VECTORDF(scale)(&vvreal.vector,1./(double)(d->size2-1));
+			}
+			else
+			{
+				for(k=0;k<(long)d->size2;k++)
+					gsl_histogram_increment(hreal[id],MATRIXFF(get)(d,j,(size_t)k));
+				VECTORDF(scale)(&vvreal.vector,1./(double)(d->size2));
+			}					
+
+			//Convert to density histogram
+			VECTORDF(div)(&vvreal.vector,vwidth);
+			//Convert to probability central histogram
+			pij_llrtopij_convert_histograms_buffed(hreal[id],&vvnull.vector,hc[id],&vvb1.vector,&vvb2.vector);
+			//Convert likelihoods to probabilities
+			vva=MATRIXFF(row)(d,j);
+			pij_llrtopij_histogram_interpolate_linear(hc[id],&vvb3.vector,&vva.vector);
+		}
+	}
+	
+	CLEANUP
+	return 0;
+#undef	CLEANUP
+}
+
+
+
+
+
+
 
 
 

@@ -1,4 +1,4 @@
-/* Copyright 2016, 2017 Lingfei Wang
+/* Copyright 2016-2018 Lingfei Wang
  * 
  * This file is part of Findr.
  * 
@@ -29,26 +29,17 @@ extern "C"
 {
 #endif
 
-struct pij_gassist_nullhist_analytical_pdf_param
-{
-	//(ng,ns) Genotype data
-	const MATRIXG*	g;
-	//Maximum number of possible values each genotype can take.
-	//=Number of alleles + 1
-	size_t	nv;
-	/* Number of split within each bin. 2^nsplit central points are
-	 * taken and the mean is calculated as the average pdf within the bin.
-	 */
-	size_t	nsplit;
-};
-
-
-//Specific interface function for different stages
-int	pij_gassist_nullhist_analytical1_pdf(const void* param,gsl_histogram* h);
-int	pij_gassist_nullhist_analytical2_pdf(const void* param,gsl_histogram* h);
-int	pij_gassist_nullhist_analytical3_pdf(const void* param,gsl_histogram* h);
-int	pij_gassist_nullhist_analytical4_pdf(const void* param,gsl_histogram* h);
-int	pij_gassist_nullhist_analytical5_pdf(const void* param,gsl_histogram* h);
+/* Produce null histograms for all tests (2 to 5).
+ * h:		Output location of null histograms. 0 to 3 for tests 2 to 5.
+ * nt:		Number of targets
+ * ns:		Number of samples
+ * nv:		Number of values, = number of alleles + 1
+ * dmax:	Maximum value of all LLRs, for histogram construction.
+ * 			It can be larger than the maximum of d, if memlimit is not infinite.
+ * 			0 to 4 for tests 1 to 5.
+ * Return:	0 on success and 1 otherwise
+ */
+int pij_gassist_nullhists(gsl_histogram** h[4],size_t nt,size_t ns,size_t nv,const FTYPE dmax[4]);
 
 
 

@@ -1,4 +1,4 @@
-/* Copyright 2016, 2017 Lingfei Wang
+/* Copyright 2016-2018 Lingfei Wang
  * 
  * This file is part of Findr.
  * 
@@ -28,7 +28,7 @@
 #include "../base/data_process.h"
 #include "../base/supernormalize.h"
 #include "../base/threading.h"
-#include "llrtopij_a.h"
+#include "llrtopij.h"
 #include "llrtopv.h"
 #include "rank.h"
 
@@ -145,7 +145,7 @@ int pij_rank_pv(const MATRIXF* t,const MATRIXF* t2,MATRIXF* p,size_t memlimit)
 #undef	CLEANUP		
 }
 
-/* Convert LLR into probabilities per A. Uses pij_llrtopij_a_convert.
+/* Convert LLR into probabilities per A. Uses pij_llrtopij_convert.
  * ans:		(ng,nt) Source real LLRs to compare with null LLRs,
  * 			also output location of converted probabilities.
  * ns:		Number of samples, used for calculation of null distribution
@@ -155,7 +155,7 @@ int pij_rank_pv(const MATRIXF* t,const MATRIXF* t2,MATRIXF* p,size_t memlimit)
  * 				For nodiagshift>0/<0, use upper/lower diagonals of corresponding id.
  * Return:	0 if succeed.
  */
-static int pij_rank_llrtopij_a(MATRIXF* ans,size_t ns,char nodiag,long nodiagshift)
+static int pij_rank_llrtopij(MATRIXF* ans,size_t ns,char nodiag,long nodiagshift)
 {
 	LOG(9,"Converting LLR to probabilities on per A basis.")
 	if(ns<=2)
@@ -163,22 +163,10 @@ static int pij_rank_llrtopij_a(MATRIXF* ans,size_t ns,char nodiag,long nodiagshi
 		LOG(0,"Needs at least 3 samples to compute probabilities.")
 		return 1;
 	}
-	return pij_llrtopij_a_convert_single_self(ans,1,ns-2,nodiag,nodiagshift);
+	return pij_llrtopij_convert_single_self(ans,1,ns-2,nodiag,nodiagshift);
 }
 
-/* Calculate probabilities of A--B based on LLR distributions of real data 
- * and null hypothesis.
- * t:		(ng,ns) Expression data for A
- * t2:		(nt,ns) Expression data for B
- * p:		(ng,nt) Output for probabilities A--B is true
- * nodiag:	When the top ng rows of t2 is exactly t, diagonals of pij are meaningless.
- *			In this case, set nodiag to 1 to avoid inclusion of NANs. For nodiag=0, t and t2
- *			should not have any identical genes.
- * pij:		Function to convert LLR to probabilities, such as pij_rank_llrtopij_a
- * memlimit:Specifies approximate memory usage. Function can fail if memlimit is too small. For large dataset, memory usage will be reduced by spliting t into smaller chunks and infer separately. For unlimited memory, set memlimit=-1.	
- * Return:	0 if succeed.
- */
-static int pij_rank_any(const MATRIXF* t,const MATRIXF* t2,MATRIXF* p,char nodiag,int (*pij)(MATRIXF*,size_t,char,long),size_t memlimit)
+int pij_rank(const MATRIXF* t,const MATRIXF* t2,MATRIXF* p,char nodiag,size_t memlimit)
 {
 #define	CLEANUP		CLEANMATF(tnew)CLEANMATF(tnew2)
 	MATRIXF		*tnew,*tnew2;			//(nt,ns) Supernormalized transcript matrix
@@ -210,6 +198,13 @@ static int pij_rank_any(const MATRIXF* t,const MATRIXF* t2,MATRIXF* p,char nodia
 	if(!(tnew&&tnew2))
 		ERRRET("Not enough memory.")
 
+	//Check for identical rows in input data
+	{
+		VECTORFF(view) vbuff1=MATRIXFF(column)(tnew,0);
+		VECTORFF(view) vbuff2=MATRIXFF(row)(tnew2,0);
+		MATRIXFF(cmprow)(t,t2,&vbuff1.vector,&vbuff2.vector,nodiag,1);
+	}
+
 	//Step 1: Supernormalization
 	LOG(9,"Supernormalizing...")
 	MATRIXFF(memcpy)(tnew,t);
@@ -228,7 +223,7 @@ static int pij_rank_any(const MATRIXF* t,const MATRIXF* t2,MATRIXF* p,char nodia
 		VECTORFF(set_zero)(&vv.vector);
 	}
 	//Step 3: Convert log likelihood ratios to probabilities
-	if((ret=pij(p,ns,nodiag,0)))
+	if((ret=pij_rank_llrtopij(p,ns,nodiag,0)))
 		LOG(1,"Failed to convert log likelihood ratios to probabilities.")
 
 	//Cleanup
@@ -236,18 +231,6 @@ static int pij_rank_any(const MATRIXF* t,const MATRIXF* t2,MATRIXF* p,char nodia
 	return ret;
 #undef	CLEANUP		
 }
-
-int pij_rank_a(const MATRIXF* t,const MATRIXF* t2,MATRIXF* p,char nodiag,size_t memlimit)
-{
-	return pij_rank_any(t,t2,p,nodiag,pij_rank_llrtopij_a,memlimit);
-}
-
-int pij_rank(const MATRIXF* t,const MATRIXF* t2,MATRIXF* p,char nodiag,size_t memlimit)
-{
-	return pij_rank_a(t,t2,p,nodiag,memlimit);
-}
-
-
 
 
 

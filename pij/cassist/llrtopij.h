@@ -1,4 +1,4 @@
-/* Copyright 2016, 2017 Lingfei Wang
+/* Copyright 2016-2018 Lingfei Wang
  * 
  * This file is part of Findr.
  * 
@@ -23,16 +23,20 @@
 #define _HEADER_LIB_PIJ_CASSIST_LLRTOPIJ_H_
 #include "../../base/config.h"
 #include "../../base/types.h"
-#include "llrtopij_a.h"
 #ifdef __cplusplus
 extern "C"
 {
 #endif
 
-
-/* Always return probability of step 1 is 1. This is useful when best eQTL are already selected in advance.
+/* Converts four LLRs into probabilities together.
+ * Uses pij_cassit_llrtopij1_a to pij_cassit_llrtopij5_a.
+ * See above functions for parameter definitions.
+ * Return: 0 if all functions are successful.
  */
-int pij_cassist_llrtopij1_1(VECTORF* p1);
+int pij_cassist_llrtopijs(VECTORF* p1,MATRIXF* p2,MATRIXF* p3,MATRIXF* p4,MATRIXF* p5,size_t ns,char nodiag);
+
+
+
 
 
 

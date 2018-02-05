@@ -1,4 +1,4 @@
-/* Copyright 2016, 2017 Lingfei Wang
+/* Copyright 2016-2018 Lingfei Wang
  * 
  * This file is part of Findr.
  * 
@@ -102,7 +102,6 @@ static void pij_cassist_llr_block(const MATRIXF* g,const MATRIXF* t,const MATRIX
 			MATRIXFF(set)(llr5,i,j,(FTYPE)log(MATRIXFF(get)(llr5,i,j)));
 		}
 	}
-
 	//llr4=llr4 before scaling -0.5
 	for(i=0;i<ng;i++)
 	{
@@ -124,7 +123,7 @@ static void pij_cassist_llr_block(const MATRIXF* g,const MATRIXF* t,const MATRIX
 	MATRIXFF(scale)(llr3,-0.5);
 	MATRIXFF(scale)(llr4,-0.5);
 	MATRIXFF(scale)(llr5,-0.5);
-
+	
 	//Bounding from 0
 	VECTORFF(bound_below)(llr1,0);
 	MATRIXFF(bound_below)(llr2,0);

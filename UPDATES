@@ -1,8 +1,15 @@
+1.0.6:
+	Corrected a bug that may produce biased output in pij_gassist, pij_gassist_trad, and pijs_gassist when nodiag is set or when memlimit is small so computation is split into chunks.
+	Now setting histogram bounds based on the maximum of all LLRs (as opposed to the maximum of the chunk when memlimit is small) in pij_gassist, pij_gassist_trad, and pijs_gassist. This ensures the output is independent of memlimit (related to question from sritchie73@github).
+	Added sanity checks for agreement between input data and nodiag flag for pij functions excluding _pv (suggested by sritchie73@github).
+	Lots of internal function renaming and code restructuring.
+	Removed some unneeded files and functions.
+	Now support pkg-config setup.
 1.0.5:
-	Updated Makefiles to account for different make environments.
+	Updated Makefiles to account for different make environments (reported by sritchie73@github).
 1.0.1:
 	Bug correction:
-		Updated LDFLAGS for R interface.
+		Updated LDFLAGS for R interface (reported by audreyqyfu@github).
 1.0.0:
 	New functions:
 		Included P-value computation for 4 tests in pijs_gassist_pv and correlation test in pij_rank_pv.

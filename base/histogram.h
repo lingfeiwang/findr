@@ -1,4 +1,4 @@
-/* Copyright 2016, 2017 Lingfei Wang
+/* Copyright 2016-2018 Lingfei Wang
  * 
  * This file is part of Findr.
  * 
@@ -181,14 +181,6 @@ double* histogram_unequalbins_exact_vf(const VECTORF* d,double nbinsplit,size_t*
  */
 void histogram_fluc_binrange(double* restrict range,size_t n,double diff);
 
-/* Convert continuous to discrete (binned) values.
- * val:		value to convert
- * range:	array for boundaries of bins.
- * n:		Number of bins (=size of range-1)
- * Return:	bin id for val if success, >=n if value outside range
- */
-static inline size_t histogram_c2d(double val,const double* restrict range,size_t n);
-
 /* Construct finer histogram ranges from existing sparse one.
  * Each bin is evenly split into n bins.
  * hnew[i*n+j]=(hold[i]*(n-j)+hold[i+1]*j)/n
@@ -234,12 +226,10 @@ static inline void histogram_equalbins_fromnullcdf(size_t n,double left,double r
 	math_cdf_quantile(n,left,right,func,param,eps,ans);
 }
 
-static inline size_t histogram_c2d(double val,const double* restrict range,size_t n)
-{
-	if((val<range[0])||(val>range[n]))
-		return n;
-	return bsearch_d(val,(double*)range+1,n-1);
-}
+
+
+
+
 
 
 

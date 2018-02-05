@@ -15,11 +15,10 @@ URL_BIN_REL="$(URL_BIN)/releases"
 URL_R_REL="$(URL_R)/releases"
 VERSION1=1
 VERSION2=0
-VERSION3=5
+VERSION3=6
 LICENSE=AGPL-3
 LICENSE_FULL="GNU Affero General Public License, Version 3"
 LICENSE_URL="https://www.gnu.org/licenses/agpl-3.0"
-#UNAME=$$(uname)
 ifdef INCLUDE_MAKEFILE_BEFORE
 #Input package info here
 include $(INCLUDE_MAKEFILE_BEFORE)
@@ -39,7 +38,8 @@ DIR_SRC=.
 endif
 DIR_INSTALL_PREFIX=$(PREFIX)
 DIR_INSTALL_LIB=$(DIR_INSTALL_PREFIX)/lib
-DIR_INSTALL_INC=$(DIR_INSTALL_PREFIX)/include/$(LIB_NAME)
+DIR_INSTALL_INC0=$(DIR_INSTALL_PREFIX)/include
+DIR_INSTALL_INC=$(DIR_INSTALL_INC0)/$(LIB_NAME)
 
 CC=gcc
 CFLAGSI=$(addprefix -I ,. $(R_INCLUDE_DIR) $(PREFIX)/include /usr/local/include)
@@ -66,10 +66,24 @@ INC_INSTALL_FILES=$(LIB_H)
 INC_INSTALL_DIRS=$(dir $(LIB_H))
 LIB_UNINSTALL=$(addprefix $(DIR_INSTALL_LIB)/,$(notdir $(LIB_DPRODUCT)))
 INC_UNINSTALL=$(DIR_INSTALL_INC)
+PKGCONFIG=$(LIB_NAME).pc
+PKGCONFIG_UNINSTALL=$(DIR_INSTALL_LIB)/pkgconfig/$(LIB_NAME).pc
 
 .PHONY: all clean distclean install-lib install-inc install uninstall
 
-all: $(LIB_DPRODUCT)
+all: $(LIB_DPRODUCT) $(PKGCONFIG)
+
+$(PKGCONFIG):
+	@echo "prefix=$(DIR_INSTALL_PREFIX)" > $@
+	@echo "exec_prefix=$(DIR_INSTALL_PREFIX)" >> $@
+	@echo "libdir=$(DIR_INSTALL_LIB)" >> $@
+	@echo "includedir=$(DIR_INSTALL_INC0)" >> $@
+	@echo >> $@
+	@echo "Name: $(LIB_NAME)" >> $@
+	@echo "Description: Fast Inference of Networks from Directed Regulations" >> $@
+	@echo "Version: $(VERSION1).$(VERSION2).$(VERSION3)" >> $@
+	@echo "Libs: -L$(DIR_INSTALL_LIB) -l$(LIB_NAME) -lgsl" >> $@
+	@echo "Cflags: -I$(DIR_INSTALL_INC0)" >> $@
 
 $(LIB_CONFIG):
 	@echo "#ifndef _HEADER_LIB_CONFIG_AUTO_H_" > $@
@@ -100,23 +114,14 @@ clean:
 	$(RM) $(LIB_PRODUCT)
 
 distclean: clean
-	$(RM) $(LIB_DPRODUCT)
-	$(RM) $(LIB_CONFIG)
-	$(RM) Makefile.flags $(TMP_FILE)
+	$(RM) $(LIB_DPRODUCT) $(PKGCONFIG) $(LIB_CONFIG) Makefile.flags $(TMP_FILE)
 
 install-lib: SHELL:=/bin/bash
 install-lib: all
 	umask 0022 && mkdir -p $(DIR_INSTALL_LIB) && \
 	cp $(LIB_DPRODUCT) $(DIR_INSTALL_LIB)/ && \
 	chmod 0755 $(DIR_INSTALL_LIB)/$(notdir $(LIB_DPRODUCT)) && \
-	if [ "$$(uname)" == "Linux" ]; then \
-		ldconfig $(DIR_INSTALL_LIB) || true; \
-	fi; \
-	tcyg=$$(uname | grep -io "cygwin"); \
-	if [ -n "$$tcyg" ]; then \
-		ln -s $(DIR_INSTALL_LIB)/$(notdir $(LIB_DPRODUCT)) $(basename $(DIR_INSTALL_LIB)/$(notdir $(LIB_DPRODUCT))).dll; \
-	fi
-	
+	ldconfig $(DIR_INSTALL_LIB) || true
 
 install-inc: SHELL:=/bin/bash
 install-inc: $(LIB_CONFIG)
@@ -130,10 +135,15 @@ install-inc: $(LIB_CONFIG)
 		chmod 0644 $(DIR_INSTALL_INC)/$$fname || exit 1; \
 	done
 
-install: install-lib install-inc
+install-pkgconfig: $(PKGCONFIG)
+	umask 0022 && mkdir -p $(DIR_INSTALL_LIB)/pkgconfig && \
+	cp $< $(DIR_INSTALL_LIB)/pkgconfig/
+	chmod 0644 $(DIR_INSTALL_LIB)/pkgconfig/$(notdir $<)
+
+install: install-lib install-inc install-pkgconfig
 
 uninstall:
-	$(RM) -R $(LIB_UNINSTALL) $(INC_UNINSTALL)
+	$(RM) -R $(LIB_UNINSTALL) $(INC_UNINSTALL) $(PKGCONFIG_UNINSTALL)
 
 TMP_FILE=.tmp
 Makefile.flags:

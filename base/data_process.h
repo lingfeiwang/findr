@@ -1,4 +1,4 @@
-/* Copyright 2016, 2017 Lingfei Wang
+/* Copyright 2016-2018 Lingfei Wang
  * 
  * This file is part of Findr.
  * 
@@ -193,6 +193,7 @@ static inline void MATRIXDF(set_nan)(MATRIXD* m,double val);
 
 // Sets all old value to new value
 static inline void MATRIXFF(set_value)(MATRIXF* m,FTYPE vold,FTYPE vnew);
+static inline void VECTORFF(set_value)(VECTORF* v,FTYPE vold,FTYPE vnew);
 
 /* Locates the first not number in a vector/matrix, and return its location.
  * If not found, return -1.
@@ -351,8 +352,19 @@ static inline void VECTORFF(fluc)(VECTORF* v,FTYPE fluc);
 
 void MATRIXFF(minmax_nodiag)(const MATRIXF* d,FTYPE* restrict dmin,FTYPE* restrict dmax,long nodiagshift);
 
-
-
+/* Look for any (non)identical rows of two matrices efficiently.
+ * m1:		(ng,ns) Matrix 1
+ * m2:		(nt,ns) Matrix 2
+ * buff1:	(ng) Buffer vector 1
+ * buff2:	(ns) Buffer vector 2
+ * nodiag:	Whether to the same rows should be the same in both matrices
+ * warn:	Whether to show warning in log before returning 1
+ * Return:	1 if any of the following 3 conditions are satisfied, and 0 otherwise.
+ * 	1. row i in m1 = row j in m2 and i!=j
+ *	2. row i in m1 = row i in m2 and !nodiag
+ * 	3. row i in m1 != row i in m2 and nodiag
+ */
+int MATRIXFF(cmprow)(const MATRIXF* m1,const MATRIXF* m2,VECTORF* buff1,VECTORF* buff2,char nodiag,char warn);
 
 
 
@@ -655,7 +667,6 @@ static inline void MATRIXDF(set_nan)(MATRIXD* m,double val)
 	MATRIXDF(set_cond)(m,gsl_isnan,val);
 }
 
-
 static inline void MATRIXFF(set_value)(MATRIXF* m,FTYPE vold,FTYPE vnew)
 {
 	size_t	i,j;
@@ -665,7 +676,13 @@ static inline void MATRIXFF(set_value)(MATRIXF* m,FTYPE vold,FTYPE vnew)
 				MATRIXFF(set)(m,i,j,vnew);
 }
 
-
+static inline void VECTORFF(set_value)(VECTORF* v,FTYPE vold,FTYPE vnew)
+{
+	size_t	i;
+	for(i=0;i<v->size;i++)
+		if(VECTORFF(get)(v,i)==vold)
+			VECTORFF(set)(v,i,vnew);
+}
 
 static inline void MATRIXFF(cov1)(const MATRIXF* m,MATRIXF* cov)
 {

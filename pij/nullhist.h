@@ -1,4 +1,4 @@
-/* Copyright 2016, 2017 Lingfei Wang
+/* Copyright 2016-2018 Lingfei Wang
  * 
  * This file is part of Findr.
  * 
@@ -15,122 +15,59 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with Findr.  If not, see <http://www.gnu.org/licenses/>.
  */
-/* This file contains the methods to construct null histogram.
- * Each method contains two parts: an interface function to produce
- * the null histogram and a struct for the parameters needed by the
- * function.
- * Currently two methods are implemented.
- * 1:	Sample-model method utilizes sampler functions
- *		to randomly sample null data and modeler functions to model the
- *		null histogram based on sampled null data. This is a generic
- *		method and can be tailored for specific needs.
- * 2:	Analytical method specifically for pij model, where the distribution
- *		of LLR of null hypothesis is exactly calculable. This is
- *		the actually used method for faster and more precise performance.
- * 
- * Regardless of method, the interface function should conform with
- * the following definition:
- * (*int)(const void* p,gsl_histogram* h);
- * p:	Parameter of the method.
- * h:	Existing histogram with range specified. The function should
- * 		fill this histogram in the bins.
- * Return:	0 on success.
+/* This part produces the histogram of parametric null distributions.
  */
 
 #ifndef _HEADER_LIB_PIJ_NULLHIST_H_
 #define _HEADER_LIB_PIJ_NULLHIST_H_
 #include "../base/config.h"
-#include "../base/gsl/histogram.h"
 #include "../base/types.h"
-#include "nullsampler.h"
-#include "nullmodeler.h"
+#include "../base/gsl/histogram.h"
 #ifdef __cplusplus
 extern "C"
 {
 #endif
 
-/****************************************************************
- * The sample-model method for generation of null histogram
- * Uses a sampler function to randomly sample null data and a modeler
- * to model the histogram of null data. The samplers are defined
- * in pij/nullsampler.h. The modelers are defined in
- * pij/nullmodeler.h. The sample-model method is generic
- * but for the specific pij model, analytical method (see below)
- * perform more precise and faster.
- ***************************************************************/
 
-struct pij_nullhist_sample_model_param
-{
-	//Input data
-	const void *d;
-	/* Data struct size (for d).
-	 * Must be small and use pointers, for memory saving and easier partitioning.
-	 */
-	size_t		dsize;
-	/* Partition function to partition mission/data into smaller chunks.
-	 * Look threading_threading_get_startend for help
-	 * src:		Larger data to be partitioned, having same type as d
-	 * dest:	Smaller data after partitioning, same type as d
-	 * id:		Id of the data chuck (out of total) to obtain from partition
-	 * total:	Total number of chucks for partitioning.
-	 * Return:	'Size' of dest after partition. Must be !=0 for nonzero data size
-	 * 			which needs further process, or 0 if no calculation is required
-	 * 			due to zero size in the partition.
-	 */
-	size_t (*partition)(const void* src,void* dest,size_t id,size_t total);
-	//Sampler function struct
-	const struct pij_nullsampler* sampler;
-	//Modeler function struct
-	const struct pij_nullmodeler* modeler;
-	//Parameter of sampler function
-	const void* ps;
-	//Parameter of modeler function
-	const void* pm;
-};
-
-// Interface function of sample-model method, multithreaded.
-int	pij_nullhist_sample_model(const void* p,gsl_histogram* h);
-
-
-/****************************************************************
- * The analytical methods to calculate null histograms for pij
- * is faster and more precise. This method calculates pdf values at
- * evenly spreaded points within each bin for better accuracy.
- * The three steps of pij share the same analytical formula of
- * null histograms.
- ***************************************************************/
-
-
-struct pij_nullhist_analytical_pdf_param
-{
-	/* Number of split within each bin. 2^nsplit central points are
-	 * taken and the mean is calculated as the average pdf within the bin.
-	 */
-	size_t	nsplit;
-	/* Null pdf function to draw null histogram from
-	 * Param 1:	Coordinates to calculate pdfs
-	 * Param 2: Output buffer for pdfs as return
-	 * Param 3:	Parameter accepted by function
-	 * Return:	0 on success.
-	 */
-	int (*func)(const VECTORD*,VECTORD*,const void*);
-	//Parameter accepted by pdf function (Param 3)
-	const void* param;
-};
-
-/* Generic interface function of analytical method.
- * Same as interface function except with one extra parameter in the end.
- * func:	to specifiy which function to use to calculate null pdf.
+/* Construct one null histogram for a specific genotype value count.
+ * The function calculates the null density histogram for random variable:
+ * x=-0.5*log(1-z1/(z1+z2)), where z1~chi2(n1),z2~chi2(n2),
+ * Histogram bin count and width are automatically determined
+ * from real data count (nd).
+ * For bin range settings, see histogram_unequalbins_fromnullcdf.
+ * For null density histogram from pdf, see pij_nulldist_hist_pdf.
+ * dmax:	Specifies the histogram bound as [0,dmax).
+ * nd:		Count of real data to form real histograms. This is used to
+ * 			automatically decide number of bins and widths.
+ * n1,
+ * n2:		Parameters of null distribution.
+ * Return:	Constructed null distribution histograms with preset
+ * 			bin ranges and values as density.
  */
-int	pij_nullhist_analytical_pdf(const void* param,gsl_histogram* h);
+gsl_histogram* pij_nullhist_single(double dmax,size_t nd,size_t n1,size_t n2);
 
-
-
-
-
-
-
-
+/* Construct multiple null histograms for different genotype value counts.
+ * The function calculates the null density histogram for random variable:
+ * x=-0.5*log(1-z1/(z1+z2)), where z1~chi2(i*n1c+n1d),z2~chi2(-i*n2c+n2d),
+ * i=0,...,nv-2. Histogram bin count and width are automatically determined
+ * from real data count (nd).
+ * For bin range settings, see histogram_unequalbins_fromnullcdf.
+ * For null density histogram from pdf, see pij_nulldist_hist_pdf.
+ * dmax:	Specifies the histogram bound as [0,dmax).
+ * nv:		Maximum number of values each genotype can type. Must be nv>=2.
+ * 			This limits the possible values of kv in distribution, and
+ * 			also output histogram count.
+ * nd:		Count of real data to form real histograms. This is used to
+ * 			automatically decide number of bins and widths.
+ * n1c,
+ * n1d,
+ * n2c
+ * n2d:		Parameters of null distribution.
+ * Return:	[nv-1]. Constructed null distribution histograms with preset
+ * 			bin ranges and values as density. Genotypes with i values have
+ * 			histogram stored in Return[i-2].
+ */
+gsl_histogram** pij_nullhist(double dmax,size_t nv,size_t nd,long n1c,size_t n1d,long n2c,size_t n2d);
 
 
 

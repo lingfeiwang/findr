@@ -1,4 +1,4 @@
-/* Copyright 2016, 2017 Lingfei Wang
+/* Copyright 2016-2018 Lingfei Wang
  * 
  * This file is part of Findr.
  * 
@@ -34,7 +34,7 @@
  * n1c,
  * n1d,
  * n2c,
- * n2d:		Parameters to specify null distribution. See pij_llrtopij_a_nullhist
+ * n2d:		Parameters to specify null distribution. See pij_nullhist
  * Return:	0 if success.
  */
 static int pij_gassist_llrtopv_block(MATRIXF* d,const MATRIXG* g,size_t nv,long n1c,size_t n1d,long n2c,size_t n2d)
@@ -81,7 +81,7 @@ static int pij_gassist_llrtopv_block(MATRIXF* d,const MATRIXG* g,size_t nv,long 
  * n1c,
  * n1d,
  * n2c,
- * n2d:		Parameters to specify null distribution. See pij_llrtopij_a_nullhist
+ * n2d:		Parameters to specify null distribution. See pij_nullhist
  * Return:	0 if success.
  */
 static inline int pij_gassist_llrtopv_vec_block(VECTORF* d,const MATRIXG* g,size_t nv,long n1c,size_t n1d,long n2c,size_t n2d)

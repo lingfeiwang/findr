@@ -1,4 +1,4 @@
-/* Copyright 2016, 2017 Lingfei Wang
+/* Copyright 2016-2018 Lingfei Wang
  * 
  * This file is part of Findr.
  * 
@@ -75,9 +75,37 @@ void pij_llrtopij_convert_histograms_buffed(gsl_histogram* hreal,VECTORD* vnull,
 int pij_llrtopij_convert_histograms(gsl_histogram* hreal,VECTORD* vnull,gsl_histogram* hc);
 
 
+/* Obtains the maximum of matrix, possibly ignoring diagonal elements.
+ * Fails in the presence of NAN, and warns and updates at INFs.
+ * d:		Matrix/Vector to get maximum, and update any INFs
+ * nodiag:	Whether to ignore diagonal values when searching for maximum.
+ * Return:	0 if NAN is found, or the non-INF maximum otherwise.
+ */
+FTYPE pij_llrtopij_llrmatmax(MATRIXF* d,char nodiag);
+FTYPE pij_llrtopij_llrvecmax(VECTORF* d);
 
 
+/* Convert LLR of real data to probabilities, when the distribution
+ * of LLR of null distribution can be calculated analytically to follow
+ * x=-0.5*log(1-z1/(z1+z2)), where z1~chi2(n1),z2~chi2(n2).
+ * The conversion is performed for each gene A, i.e. per row of d and dconv.
+ * This function is older than pij_llrtopij_convert_single so it is not parallel.
+ * Make it parallel before using.
+ * d:		[nrow,nx] The data to use for calculation of conversion rule from LLR to pij.
+ * dconv:	[nrow,nd] The data of LLR to actually convert to pij. Can be same with d.
+ * ans:		[nrow,nd] The output location of converted pij from dconv.
+ * n1,
+ * n2:		Parameters of null distribution.
+ * nodiag:	Whether diagonal elements of d should be ignored when converting
+ * 			to probabilities.
+ * nodiagshift:	Diangonal column shift for nodiag==1.
+ * 				For nodiagshift>0/<0, use upper/lower diagonal. 
+ * Return:	0 on success.
+ */
+int pij_llrtopij_convert_single(const MATRIXF* d,const MATRIXF* dconv,MATRIXF* ans,size_t n1,size_t n2,char nodiag,long nodiagshift);
 
+// Same with pij_llrtopij_convert_single, for d=dconv=ans. Saves memory.
+int pij_llrtopij_convert_single_self(MATRIXF* d,size_t n1,size_t n2,char nodiag,long nodiagshift);
 
 
 

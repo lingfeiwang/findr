@@ -1,4 +1,4 @@
-/* Copyright 2016, 2017 Lingfei Wang
+/* Copyright 2016-2018 Lingfei Wang
  * 
  * This file is part of Findr.
  * 
@@ -24,17 +24,20 @@
 #include "../../base/config.h"
 #include "../../base/gsl/histogram.h"
 #include "../../base/types.h"
-#include "llrtopij_tot.h"
-#include "llrtopij_a.h"
 #ifdef __cplusplus
 extern "C"
 {
 #endif
 
 
-/* Always return probability of step 1 is 1. This is useful when best eQTL are already selected in advance.
+
+/* Converts four LLRs into probabilities together.
+ * Uses pij_gassist_llrtopij1 to pij_gassist_llrtopij5.
+ * See above functions for parameter definitions.
+ * h:		Null histograms. 0 to 3 for tests 2 to 5.
+ * Return: 0 if all functions are successful.
  */
-int pij_gassist_llrtopij1_1(VECTORF* p1);
+int pij_gassist_llrtopijs(const MATRIXG* g,VECTORF* p1,MATRIXF* p2,MATRIXF* p3,MATRIXF* p4,MATRIXF* p5,size_t nv,const gsl_histogram * const * h[4],char nodiag,long nodiagshift);
 
 
 

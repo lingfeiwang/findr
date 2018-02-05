@@ -1,4 +1,4 @@
-/* Copyright 2016, 2017 Lingfei Wang
+/* Copyright 2016-2018 Lingfei Wang
  * 
  * This file is part of Findr.
  * 
@@ -24,11 +24,13 @@
 #include "../../base/const.h"
 #include "../../base/supernormalize.h"
 #include "../../base/threading.h"
+#include "../../base/data_process.h"
+#include "../llrtopij.h"
 #include "llr.h"
 #include "llrtopv.h"
 #include "llrtopij.h"
+#include "nullhist.h"
 #include "gassist.h"
-
 
 int pijs_gassist_pv(const MATRIXG* g,const MATRIXF* t,const MATRIXF* t2,VECTORF* p1,MATRIXF* p2,MATRIXF* p3,MATRIXF* p4,MATRIXF* p5,size_t nv,size_t memlimit)
 {
@@ -113,20 +115,17 @@ int pijs_gassist_pv(const MATRIXG* g,const MATRIXF* t,const MATRIXF* t2,VECTORF*
 #undef	CLEANUP		
 }
 
-
-int pijs_gassist_a(const MATRIXG* g,const MATRIXF* t,const MATRIXF* t2,VECTORF* p1,MATRIXF* p2,MATRIXF* p3,MATRIXF* p4,MATRIXF* p5,size_t nv,char nodiag,size_t memlimit)
+int pijs_gassist(const MATRIXG* g,const MATRIXF* t,const MATRIXF* t2,VECTORF* p1,MATRIXF* p2,MATRIXF* p3,MATRIXF* p4,MATRIXF* p5,size_t nv,char nodiag,size_t memlimit)
 {
-#define	CLEANUP			CLEANMATF(tnew)CLEANMATF(tnew2)
-	MATRIXF		*tnew,*tnew2;	//(nt,ns) Supernormalized transcript matrix
+#define	CLEANUP			CLEANMATF(tnew)CLEANMATF(tnew2)for(i=0;i<4;i++){if(hnull[i])for(j=0;j<nv-1;j++)CLEANHIST(hnull[i][j]);CLEANMEM(hnull[i]);}
+	MATRIXF			*tnew,*tnew2;	//(nt,ns) Supernormalized transcript matrix
 	MATRIXFF(view)	mvt,mvp2,mvp3,mvp4,mvp5;
 	VECTORFF(view)	vv,vvp1;
-	int			ret;
-	size_t		i,ng,ngnow,nsplit,ns;
-#ifndef NDEBUG
-	size_t		nt;
+	gsl_histogram**	hnull[4]={0,0,0,0};
+	int				ret;
+	size_t			i,j,ng,nt,ngnow,nsplit,ns;
 	
 	nt=t2->size1;
-#endif
 	ng=g->size1;
 	ns=g->size2;
 
@@ -152,7 +151,7 @@ int pijs_gassist_a(const MATRIXG* g,const MATRIXF* t,const MATRIXF* t2,VECTORF* 
 			ERRRET("Memory limit lower than minimum memory needed. Try increasing your memory usage limit.")
 		LOG(10,"Memory limit: %lu bytes.",memlimit)
 		nsplit=(size_t)ceil((float)ng/ceil((float)ng/(float)nsplit));
-		//if(nsplit<ng)
+		if(nsplit<ng)
 			LOG(9,"Splitting %lu primary targets into groups of about size %lu.",ng,nsplit)
 	}
 	
@@ -160,6 +159,13 @@ int pijs_gassist_a(const MATRIXG* g,const MATRIXF* t,const MATRIXF* t2,VECTORF* 
 	tnew2=MATRIXFF(alloc)(t2->size1,t2->size2);
 	if(!(tnew&&tnew2))
 		ERRRET("Not enough memory.")
+
+	//Check for identical rows in input data
+	{
+		VECTORFF(view) vbuff1=MATRIXFF(column)(tnew,0);
+		VECTORFF(view) vbuff2=MATRIXFF(row)(tnew2,0);
+		MATRIXFF(cmprow)(t,t2,&vbuff1.vector,&vbuff2.vector,nodiag,1);
+	}
 
 	//Step 1: Supernormalization
 	LOG(9,"Supernormalizing...")
@@ -170,6 +176,8 @@ int pijs_gassist_a(const MATRIXG* g,const MATRIXF* t,const MATRIXF* t2,VECTORF* 
 	if(ret)
 		ERRRET("Supernormalization failed.")
 	
+	//Step 2: Log likelihood ratios from nonpermuted data
+	LOG(9,"Calculating real log likelihood ratios...")
 	for(i=0;i<ng;i+=nsplit)
 	{
 		ngnow=GSL_MIN(ng-i,nsplit);
@@ -181,12 +189,36 @@ int pijs_gassist_a(const MATRIXG* g,const MATRIXF* t,const MATRIXF* t2,VECTORF* 
 		mvp3=MATRIXFF(submatrix)(p3,i,0,ngnow,p3->size2);
 		mvp4=MATRIXFF(submatrix)(p4,i,0,ngnow,p4->size2);
 		mvp5=MATRIXFF(submatrix)(p5,i,0,ngnow,p5->size2);
-		//Step 2: Log likelihood ratios from nonpermuted data
-		LOG(9,"Calculating real log likelihood ratios...")
 		if(pij_gassist_llr(&mvg.matrix,&mvt.matrix,tnew2,&vvp1.vector,&mvp2.matrix,&mvp3.matrix,&mvp4.matrix,&mvp5.matrix,nv))
 			ERRRET("pij_gassist_llr failed.")
-		//Step 3: Convert log likelihood ratios to probabilities
-		if((ret=pij_gassist_llrtopijs_a(&mvg.matrix,&vvp1.vector,&mvp2.matrix,&mvp3.matrix,&mvp4.matrix,&mvp5.matrix,nv,nodiag,(long)i)))
+	}
+	
+	//Step 3: Obtain null histograms
+	{
+		FTYPE			dmax[4];
+		dmax[0]=pij_llrtopij_llrmatmax(p2,nodiag);
+		dmax[1]=pij_llrtopij_llrmatmax(p3,nodiag);
+		dmax[2]=pij_llrtopij_llrmatmax(p4,nodiag);
+		dmax[3]=pij_llrtopij_llrmatmax(p5,nodiag);
+		if(!(dmax[0]&&dmax[1]&&dmax[2]&&dmax[3]))
+			ERRRET("Negative or NAN found in LLR.")
+		if(pij_gassist_nullhists(hnull,nt,ns,nv,dmax))
+			ERRRET("Failed to construct null histograms.")
+	}
+
+	//Step 4: Convert log likelihood ratios to probabilities
+	for(i=0;i<ng;i+=nsplit)
+	{
+		ngnow=GSL_MIN(ng-i,nsplit);
+
+		MATRIXGF(const_view) mvg=MATRIXGF(const_submatrix)(g,i,0,ngnow,g->size2);
+		mvt=MATRIXFF(submatrix)(tnew,i,0,ngnow,tnew->size2);
+		vvp1=VECTORFF(subvector)(p1,i,ngnow);
+		mvp2=MATRIXFF(submatrix)(p2,i,0,ngnow,p2->size2);
+		mvp3=MATRIXFF(submatrix)(p3,i,0,ngnow,p3->size2);
+		mvp4=MATRIXFF(submatrix)(p4,i,0,ngnow,p4->size2);
+		mvp5=MATRIXFF(submatrix)(p5,i,0,ngnow,p5->size2);
+		if((ret=pij_gassist_llrtopijs(&mvg.matrix,&vvp1.vector,&mvp2.matrix,&mvp3.matrix,&mvp4.matrix,&mvp5.matrix,nv,(const gsl_histogram* const **)hnull,nodiag,(long)i)))
 			LOG(4,"Failed to convert all log likelihood ratios to probabilities.")
 		if(nodiag)
 		{
@@ -207,17 +239,7 @@ int pijs_gassist_a(const MATRIXG* g,const MATRIXF* t,const MATRIXF* t2,VECTORF* 
 #undef	CLEANUP		
 }
 
-int pijs_gassist(const MATRIXG* g,const MATRIXF* t,const MATRIXF* t2,VECTORF* p1,MATRIXF* p2,MATRIXF* p3,MATRIXF* p4,MATRIXF* p5,size_t nv,char nodiag,size_t memlimit)
-{
-	return pijs_gassist_a(g,t,t2,p1,p2,p3,p4,p5,nv,nodiag,memlimit);
-}
-
-/* Estimates the probability p(E->A->B) from genotype and expression data. Combines results
- * from any pij_gassist_pijs. For more information, see pij_gassist_pijs_ab.
- * ans:	(ng,nt) Output matrix for probabilities. ans[A,B] is p(E->A->B).
- * pijs:	Function to calculate pijs.
- */
-static int pij_gassist_any(const MATRIXG* g,const MATRIXF* t,const MATRIXF* t2,MATRIXF* ans,size_t nv,char nodiag,int (*pijs)(const MATRIXG*,const MATRIXF*,const MATRIXF*,VECTORF*,MATRIXF*,MATRIXF*,MATRIXF*,MATRIXF*,size_t,char,size_t),size_t memlimit)
+int pij_gassist(const MATRIXG* g,const MATRIXF* t,const MATRIXF* t2,MATRIXF* ans,size_t nv,char nodiag,size_t memlimit)
 {
 #define	CLEANUP			CLEANVECF(p1)CLEANMATF(p2)CLEANMATF(p3)CLEANMATF(p4)
 	VECTORF	*p1;
@@ -234,7 +256,7 @@ static int pij_gassist_any(const MATRIXG* g,const MATRIXF* t,const MATRIXF* t2,M
 	p4=MATRIXFF(alloc)(ng,nt);
 	if(!(p1&&p2&&p3&&p4))
 		ERRRET("Not enough memory.")
-	if(pijs(g,t,t2,p1,p2,p3,p4,ans,nv,nodiag,memlimit))
+	if(pijs_gassist(g,t,t2,p1,p2,p3,p4,ans,nv,nodiag,memlimit))
 		ERRRET("pij_gassist_pijs failed.")
 		
 	//Combine tests
@@ -259,16 +281,6 @@ static int pij_gassist_any(const MATRIXG* g,const MATRIXF* t,const MATRIXF* t2,M
 #undef	CLEANUP
 }
 
-int pij_gassist_a(const MATRIXG* g,const MATRIXF* t,const MATRIXF* t2,MATRIXF* ans,size_t nv,char nodiag,size_t memlimit)
-{
-	return pij_gassist_any(g,t,t2,ans,nv,nodiag,pijs_gassist_a,memlimit);
-}
-
-int pij_gassist(const MATRIXG* g,const MATRIXF* t,const MATRIXF* t2,MATRIXF* ans,size_t nv,char nodiag,size_t memlimit)
-{
-	return pij_gassist_a(g,t,t2,ans,nv,nodiag,memlimit);
-}
-
 int pij_gassist_trad(const MATRIXG* g,const MATRIXF* t,const MATRIXF* t2,MATRIXF* ans,size_t nv,char nodiag,size_t memlimit)
 {
 #define	CLEANUP			CLEANVECF(p1)CLEANMATF(p2)CLEANMATF(p4)CLEANMATF(p5)
@@ -286,7 +298,7 @@ int pij_gassist_trad(const MATRIXG* g,const MATRIXF* t,const MATRIXF* t2,MATRIXF
 	p5=MATRIXFF(alloc)(ng,nt);
 	if(!(p1&&p2&&p5&&p4))
 		ERRRET("Not enough memory.")
-	if(pijs_gassist_a(g,t,t2,p1,p2,ans,p4,p5,nv,nodiag,memlimit))
+	if(pijs_gassist(g,t,t2,p1,p2,ans,p4,p5,nv,nodiag,memlimit))
 		ERRRET("pij_gassist_pijs failed.")
 		
 	//Combine tests

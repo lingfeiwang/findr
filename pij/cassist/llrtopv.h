@@ -1,4 +1,4 @@
-/* Copyright 2016, 2017 Lingfei Wang
+/* Copyright 2016-2018 Lingfei Wang
  * 
  * This file is part of Findr.
  * 
@@ -29,21 +29,19 @@ extern "C"
 {
 #endif
 
-
-
 /* Converts log likelihood ratios into p-values for continuous assisted causal inference test for each test separately.
  * d:	MATRIXF of any size, as input of LLRs and also output of corresponding p-values
  * ns:	Number of samples, to be used to calculate the null distribution
  */
 static inline void pij_cassist_llrtopv1(VECTORF* d,size_t ns)
 {
-	assert(ns>2);
+	assert(ns>3);
 	pij_llrtopv_block(d,1,ns-2);
 }
 
 static inline void pij_cassist_llrtopv2(MATRIXF* d,size_t ns)
 {
-	assert(ns>2);
+	assert(ns>3);
 	pij_llrtopvm(d,1,ns-2);
 }
 

@@ -1,4 +1,4 @@
-/* Copyright 2016, 2017 Lingfei Wang
+/* Copyright 2016-2018 Lingfei Wang
  * 
  * This file is part of Findr.
  * 
@@ -45,13 +45,17 @@ extern "C"
 int pij_rank_pv(const MATRIXF* t,const MATRIXF* t2,MATRIXF* p,size_t memlimit);
 
 /* Calculate probabilities of A--B based on LLR distributions of real data 
- * and null hypothesis. Conversion from LLR to probability is per A.
- * See pij_rank_pij_any.
+ * and null hypothesis.
+ * t:		(ng,ns) Expression data for A
+ * t2:		(nt,ns) Expression data for B
+ * p:		(ng,nt) Output for probabilities A--B is true
+ * nodiag:	When the top ng rows of t2 is exactly t, diagonals of pij are meaningless.
+ *			In this case, set nodiag to 1 to avoid inclusion of NANs. For nodiag=0, t and t2
+ *			should not have any identical genes.
+ * memlimit:Specifies approximate memory usage. Function can fail if memlimit is too small. For large dataset, memory usage will be reduced by spliting t into smaller chunks and infer separately. For unlimited memory, set memlimit=-1.	
+ * Return:	0 if succeed.
  */
-int pij_rank_a(const MATRIXF* t,const MATRIXF* t2,MATRIXF* p,char nodiag,size_t memlimit);
-//Duplicate with a different name
 int pij_rank(const MATRIXF* t,const MATRIXF* t2,MATRIXF* p,char nodiag,size_t memlimit);
-
 
 
 

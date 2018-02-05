@@ -1,4 +1,4 @@
-/* Copyright 2016, 2017 Lingfei Wang
+/* Copyright 2016-2018 Lingfei Wang
  * 
  * This file is part of Findr.
  * 
@@ -56,38 +56,6 @@ struct pij_gassist_llr_block_buffed_params{
 	//[nv](ng,nt) Buffer matrix
 	MATRIXF**		mb1;
 };
-
-void pij_gassist_llr_ratioandmean_1v1(const MATRIXG* g,const MATRIXF* t1,const MATRIXF* t2,MATRIXF* mratio,MATRIXF* mmean1,MATRIXF* mmean2,size_t nv)
-{
-	size_t	ng=g->size1;
-	size_t	ns=g->size2;
-	size_t	i,j;
-	size_t	val;
-	FTYPE	f1;
-	
-	MATRIXFF(set_zero)(mratio);
-	MATRIXFF(set_zero)(mmean1);
-	MATRIXFF(set_zero)(mmean2);
-	
-	//Calculating sums
-	for(i=0;i<ng;i++)
-		for(j=0;j<ns;j++)
-		{
-			val=(size_t)MATRIXGF(get)(g,i,j);
-			MATRIXFF(ptr)(mratio,i,val)[0]++;
-			*MATRIXFF(ptr)(mmean1,i,val)+=MATRIXFF(get)(t1,i,j);
-			*MATRIXFF(ptr)(mmean2,i,val)+=MATRIXFF(get)(t2,i,j);
-		}
-	//Convert to means
-	for(i=0;i<ng;i++)
-		for(j=0;j<nv;j++)
-		{
-			f1=MATRIXFF(get)(mratio,i,j);
-			*MATRIXFF(ptr)(mmean1,i,j)/=f1+FTYPE_MIN;
-			*MATRIXFF(ptr)(mmean2,i,j)/=f1+FTYPE_MIN;
-		}
-	MATRIXFF(scale)(mratio,1/(FTYPE)ns);
-}
 
 /* Calculates the ratio and mean of all transcripts (t) for genes (g) with existing buffers.
  * g:		MATRIXG (ng,ns) genotype data, for multiple SNP and samples. Each element takes the value 0 to nv-1

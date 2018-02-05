@@ -1,4 +1,4 @@
-/* Copyright 2016, 2017 Lingfei Wang
+/* Copyright 2016-2018 Lingfei Wang
  * 
  * This file is part of Findr.
  * 
@@ -18,177 +18,98 @@
 #include "../base/config.h"
 #include <stdlib.h>
 #include <stdio.h>
-#include <assert.h>
-#include <sys/time.h>
-#include "../base/gsl/blas.h"
+#include <string.h>
+#include "../base/gsl/histogram.h"
 #include "../base/logger.h"
 #include "../base/macros.h"
 #include "../base/histogram.h"
-#include "../base/threading.h"
-#include "nullhist.h"
 #include "nulldist.h"
+#include "nullhist.h"
 
-/* Null histogram generation of sample-model method on single thread.
- * g,t,t2,sampler,modeler,ps:	See pij_nullhist_sample_model_param.
- * pmc:		Model container object. See definition in nullmodel.h.
- * Return:	0 if success.
- */
-static int pij_nullhist_sample_model_single(const void* data,const struct pij_nullsampler* sampler,const struct pij_nullmodeler* modeler,const void* ps,void* pmc)
+
+
+gsl_histogram* pij_nullhist_single(double dmax,size_t nd,size_t n1,size_t n2)
 {
-#define	CLEANUP	if(ptrs){sampler->close(ptrs);ptrs=0;}\
-				if(pm){modeler->close(pm);pm=0;}
+#define	CLEANUP	CLEANHIST(h)
+	struct pij_nulldist_pdfs_param param={n1,n2};
+	size_t	nbin;
+	gsl_histogram *h=0;
 	
-	struct timeval	tv;			
-	void	*ptrs,*pm;
-	size_t	n1,n2;
-	size_t	i;
-	
-	assert(sampler&&modeler);
-	ptrs=pm=0;
-	//Initialize sampler with timely random seed.
-	gettimeofday(&tv,NULL);
-	ptrs=sampler->init(data,ps,(long unsigned int)tv.tv_usec);
-	if(!ptrs)
-		ERRRET("Sampler construction failed.")
-	//Obtain dimensions of random samples.
-	sampler->dimensions(ptrs,&n1,&n2);
 	assert(n1&&n2);
-
-	AUTOALLOCVECF(vd,n1,30000)	
-	if(!vd)
-		ERRRET("Not enough memory.")
-	//Initialize modeler object given model container object.
-	pm=modeler->init(pmc,data,n1,n2);
-	if(!pm)
-	{
-		AUTOFREEVEC(vd)
-		ERRRET("Modeler construction failed.")
-	}
-	//Sample
-	for(i=0;i<n2;i++)
-	{
-		sampler->sample(ptrs,vd);
-		modeler->input(pm,vd);
-	}
-	//Synced updated of model container.
-	#pragma omp critical
-		modeler->merge(pm,pmc);
-	CLEANUP
-	AUTOFREEVEC(vd)
-	return 0;
+	dmax*=(1+1E-6);
+	nbin=histogram_unequalbins_param_count(nd);
+	if(nbin<5)
+		ERRRETV(0,"Determined "PRINTFSIZET" bins constructed. Bin count too small.",nbin)
+	else if(nbin<10)
+		LOG(5,"Determined "PRINTFSIZET" bins, smaller than recommended minimum bin count (10).",nbin)
+	else
+		LOG(10,"Determined "PRINTFSIZET" bins.",nbin)
+	h=gsl_histogram_alloc(nbin);
+	if(!h)
+		ERRRETV(0,"Not enough memory.")
+	//Null density histogram
+	gsl_histogram_set_ranges_uniform(h,0,dmax);
+	//Set null histogram ranges
+	if(histogram_unequalbins_fromnullpdfs(nbin,h->range,pij_nulldist_pdfs,&param))
+		ERRRETV(0,"histogram_unequalbins_fromnullpdfs failed.")
+	//Calculate null density histogram
+	if(pij_nulldist_hist_pdf(h->range,nbin,h->bin,param.n1,param.n2,5))
+		ERRRETV(0,"pij_nulldist_hist_pdf failed.")
+	return h;
 #undef	CLEANUP
 }
 
-int	pij_nullhist_sample_model(const void* param,gsl_histogram* h)
+gsl_histogram** pij_nullhist(double dmax,size_t nv,size_t nd,long n1c,size_t n1d,long n2c,size_t n2d)
 {
-#define	CLEANUP	if(container){\
-				p->modeler->close_container(container);\
-				container=0;}
-	const struct pij_nullhist_sample_model_param *p=param;
+#define	CLEANUP	if(h){for(i=0;i<nv-1;i++)CLEANHIST(h[i])free(h);h=0;}
+	struct pij_nulldist_pdfs_param param;
+	size_t	nbin,i;
 	int		ret;
-	void*	container;
+	gsl_histogram **h;
 	
-
-	//Initialize model container
-	container=p->modeler->init_container(p->d,p->pm,h);
-	if(!container)
-		ERRRET("Modeler container construction failed.")
-
-	#pragma omp parallel shared(ret)
+	assert(nv>=2);
+	dmax*=(1+1E-6);
+	CALLOCSIZE(h,nv-1);
+	if(!h)
+		ERRRETV(0,"Not enough memory.")
+	nbin=histogram_unequalbins_param_count(nd);
+	if(nbin<5)
+		ERRRETV(0,"Determined "PRINTFSIZET" bins constructed. Bin count too small.",nbin)
+	else if(nbin<10)
+		LOG(5,"Determined "PRINTFSIZET" bins, smaller than recommended minimum bin count (10).",nbin)
+	else
+		LOG(10,"Determined "PRINTFSIZET" bins.",nbin)
+	ret=1;
+	for(i=0;i<nv-1;i++)
+		ret=ret&&(h[i]=gsl_histogram_alloc(nbin));
+	if(!ret)
+		ERRRETV(0,"Not enough memory.")
+	//Null density histogram
+	for(i=0;i<nv-1;i++)
 	{
-		char d[p->dsize];
-		//Initializing block selection
-		if(p->partition(p->d,d,(size_t)omp_get_thread_num(),(size_t)omp_get_num_threads()))
-		{
-			int	retth;
-		//Calculate null histograms
-			retth=pij_nullhist_sample_model_single(d,p->sampler,p->modeler,p->ps,container);
-			#pragma omp atomic
-				ret+=retth;
-		}
+		gsl_histogram_set_ranges_uniform(h[i],0,dmax);
+		//Set null histogram ranges
+		param.n1=(size_t)((long)i*n1c+(long)n1d);
+		param.n2=(size_t)(-(long)i*n2c+(long)n2d);
+		if(histogram_unequalbins_fromnullpdfs(nbin,h[i]->range,pij_nulldist_pdfs,&param))
+			ERRRETV(0,"histogram_unequalbins_fromnullpdfs failed.")
+		//Calculate null density histogram
+		if(pij_nulldist_hist_pdf(h[i]->range,nbin,h[i]->bin,param.n1,param.n2,5))
+			ERRRETV(0,"pij_nulldist_hist_pdf failed.")
 	}
-	if(ret)
-		ERRRET("Failed to construct histogram.")
-
-	//Output from model container
-	ret=p->modeler->output(container,h);
-	if(ret)
-		ERRRET("Failed to output histogram.")
-	CLEANUP
-	return 0;
+	return h;
 #undef	CLEANUP
 }
 
-int	pij_nullhist_analytical_pdf(const void* param,gsl_histogram* h)
-{
-#define	CLEANUP	CLEANVECD(loc)CLEANVECD(val)
-	const struct pij_nullhist_analytical_pdf_param	*p=param;
 
-	VECTORD	*loc,*val;
-	VECTORDF(view)	vvh=VECTORDF(view_array)(h->bin,h->n);
-	size_t		i;
-	size_t		nsp;
-	double		v;
-	
-	assert((p->nsplit<10));
-	nsp=(size_t)1<<(p->nsplit);
-	loc=VECTORDF(alloc)(h->n*nsp);
-	val=VECTORDF(alloc)(h->n*nsp);
-	if(!(loc&&val))
-		ERRRET("Not enough memory.")
-	
-	//Construct bin ranges
-	if(nsp==1)
-	{
-		VECTORDF(const_view) vv1=VECTORDF(const_view_array)(h->range,h->n);
-		VECTORDF(const_view) vv2=VECTORDF(const_view_array)(h->range+1,h->n);
-		VECTORDF(memcpy)(loc,&vv1.vector);
-		VECTORDF(add)(loc,&vv2.vector);
-		VECTORDF(scale)(loc,0.5);
-	}
-	else
-	{
-		VECTORDF(const_view) vvc=VECTORDF(const_view_array)(h->range,h->n+1);
-		histogram_finer_central(&vvc.vector,loc,nsp);
-	}
-	//Calculate bin densities
-	if(p->func(loc,val,p->param))
-	{
-		CLEANUP
-		return 1;
-	}
-	
-	//Shrink to output
-	if(nsp==1)
-	{
-		VECTORDF(memcpy)(&vvh.vector,val);
-	}
-	else
-	{
-		VECTORDF(set_zero)(&vvh.vector);
-		for(i=0;i<nsp;i++)
-		{
-			VECTORDF(const_view)	vvc=VECTORDF(const_subvector_with_stride)(val,i,nsp,h->n);
-			VECTORDF(add)(&vvh.vector,&vvc.vector);
-		}
-	}
-	//Convert to bin values from densities
-	{
-		VECTORDF(const_view)	vv1=VECTORDF(const_view_array)(h->range,h->n);
-		VECTORDF(const_view)	vv2=VECTORDF(const_view_array)(h->range+1,h->n);
-		VECTORDF(view)			vv3=VECTORDF(subvector)(loc,0,h->n);
-		VECTORDF(memcpy)(&vv3.vector,&vv2.vector);
-		VECTORDF(sub)(&vv3.vector,&vv1.vector);
-		VECTORDF(mul)(&vvh.vector,&vv3.vector);
-	}
 
-	//Scale to unity.
-	v=gsl_blas_dasum(&vvh.vector);
-	VECTORDF(scale)(&vvh.vector,1/v);
-	CLEANUP
-	return 0;
-#undef	CLEANUP
-}
+
+
+
+
+
+
+
 
 
 

@@ -1,4 +1,4 @@
-/* Copyright 2016, 2017 Lingfei Wang
+/* Copyright 2016-2018 Lingfei Wang
  * 
  * This file is part of Findr.
  * 
@@ -24,6 +24,7 @@
 #include "../../base/const.h"
 #include "../../base/supernormalize.h"
 #include "../../base/threading.h"
+#include "../../base/data_process.h"
 #include "llr.h"
 #include "llrtopij.h"
 #include "llrtopv.h"
@@ -96,7 +97,7 @@ int pijs_cassist_pv(const MATRIXF* g,const MATRIXF* t,const MATRIXF* t2,VECTORF*
 #undef	CLEANUP		
 }
 
-int pijs_cassist_a(const MATRIXF* g,const MATRIXF* t,const MATRIXF* t2,VECTORF* p1,MATRIXF* p2,MATRIXF* p3,MATRIXF* p4,MATRIXF* p5,char nodiag,size_t memlimit)
+int pijs_cassist(const MATRIXF* g,const MATRIXF* t,const MATRIXF* t2,VECTORF* p1,MATRIXF* p2,MATRIXF* p3,MATRIXF* p4,MATRIXF* p5,char nodiag,size_t memlimit)
 {
 #define	CLEANUP			CLEANMATF(gnew)CLEANMATF(tnew)CLEANMATF(tnew2)
 	MATRIXF		*gnew;			//(ng,ns) Supernormalized transcript matrix
@@ -140,6 +141,13 @@ int pijs_cassist_a(const MATRIXF* g,const MATRIXF* t,const MATRIXF* t2,VECTORF* 
 	if(!(gnew&&tnew&&tnew2))
 		ERRRET("Not enough memory.")
 
+	//Check for identical rows in input data
+	{
+		VECTORFF(view) vbuff1=MATRIXFF(column)(tnew,0);
+		VECTORFF(view) vbuff2=MATRIXFF(row)(tnew2,0);
+		MATRIXFF(cmprow)(t,t2,&vbuff1.vector,&vbuff2.vector,nodiag,1);
+	}
+
 	//Step 1: Supernormalization
 	LOG(9,"Supernormalizing...")
 	MATRIXFF(memcpy)(gnew,g);
@@ -155,7 +163,7 @@ int pijs_cassist_a(const MATRIXF* g,const MATRIXF* t,const MATRIXF* t2,VECTORF* 
 	LOG(9,"Calculating real log likelihood ratios...")
 	pij_cassist_llr(gnew,tnew,tnew2,p1,p2,p3,p4,p5);
 	//Step 3: Convert log likelihood ratios to probabilities
-	if((ret=pij_cassist_llrtopijs_a(p1,p2,p3,p4,p5,ns,nodiag)))
+	if((ret=pij_cassist_llrtopijs(p1,p2,p3,p4,p5,ns,nodiag)))
 		LOG(4,"Failed to convert all log likelihood ratios to probabilities.")
 	if(nodiag)
 	{
@@ -175,17 +183,7 @@ int pijs_cassist_a(const MATRIXF* g,const MATRIXF* t,const MATRIXF* t2,VECTORF* 
 #undef	CLEANUP		
 }
 
-int pijs_cassist(const MATRIXF* g,const MATRIXF* t,const MATRIXF* t2,VECTORF* p1,MATRIXF* p2,MATRIXF* p3,MATRIXF* p4,MATRIXF* p5,char nodiag,size_t memlimit)
-{
-	return pijs_cassist_a(g,t,t2,p1,p2,p3,p4,p5,nodiag,memlimit);
-}
-
-/* Estimates the probability p(E->A->B) from genotype and expression data. Combines results
- * from any pij_cassist_pijs. For more information, see pij_cassist_pijs_ab.
- * ans:	(ng,nt) Output matrix for probabilities. ans[A,B] is p(E->A->B).
- * pijs:	Function to calculate pijs.
- */
-static int pij_cassist_any(const MATRIXF* g,const MATRIXF* t,const MATRIXF* t2,MATRIXF* ans,char nodiag,int (*pijs)(const MATRIXF*,const MATRIXF*,const MATRIXF*,VECTORF*,MATRIXF*,MATRIXF*,MATRIXF*,MATRIXF*,char,size_t),size_t memlimit)
+int pij_cassist(const MATRIXF* g,const MATRIXF* t,const MATRIXF* t2,MATRIXF* ans,char nodiag,size_t memlimit)
 {
 #define	CLEANUP			CLEANVECF(p1)CLEANMATF(p2)CLEANMATF(p3)CLEANMATF(p4)
 	VECTORF	*p1;
@@ -202,7 +200,7 @@ static int pij_cassist_any(const MATRIXF* g,const MATRIXF* t,const MATRIXF* t2,M
 	p4=MATRIXFF(alloc)(ng,nt);
 	if(!(p1&&p2&&p3&&p4))
 		ERRRET("Not enough memory.")
-	if(pijs(g,t,t2,p1,p2,p3,p4,ans,nodiag,memlimit))
+	if(pijs_cassist(g,t,t2,p1,p2,p3,p4,ans,nodiag,memlimit))
 		ERRRET("pij_cassist_pijs failed.")
 		
 	//Combine tests
@@ -227,16 +225,6 @@ static int pij_cassist_any(const MATRIXF* g,const MATRIXF* t,const MATRIXF* t2,M
 #undef	CLEANUP
 }
 
-int pij_cassist_a(const MATRIXF* g,const MATRIXF* t,const MATRIXF* t2,MATRIXF* ans,char nodiag,size_t memlimit)
-{
-	return pij_cassist_any(g,t,t2,ans,nodiag,pijs_cassist_a,memlimit);
-}
-
-int pij_cassist(const MATRIXF* g,const MATRIXF* t,const MATRIXF* t2,MATRIXF* ans,char nodiag,size_t memlimit)
-{
-	return pij_cassist_a(g,t,t2,ans,nodiag,memlimit);
-}
-
 int pij_cassist_trad(const MATRIXF* g,const MATRIXF* t,const MATRIXF* t2,MATRIXF* ans,char nodiag,size_t memlimit)
 {
 #define	CLEANUP			CLEANVECF(p1)CLEANMATF(p2)CLEANMATF(p4)CLEANMATF(p5)
@@ -254,7 +242,7 @@ int pij_cassist_trad(const MATRIXF* g,const MATRIXF* t,const MATRIXF* t2,MATRIXF
 	p5=MATRIXFF(alloc)(ng,nt);
 	if(!(p1&&p2&&p5&&p4))
 		ERRRET("Not enough memory.")
-	if(pijs_cassist_a(g,t,t2,p1,p2,ans,p4,p5,nodiag,memlimit))
+	if(pijs_cassist(g,t,t2,p1,p2,ans,p4,p5,nodiag,memlimit))
 		ERRRET("pij_cassist_pijs failed.")
 		
 	//Combine tests

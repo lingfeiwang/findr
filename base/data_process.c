@@ -1,4 +1,4 @@
-/* Copyright 2016, 2017 Lingfei Wang
+/* Copyright 2016-2018 Lingfei Wang
  * 
  * This file is part of Findr.
  * 
@@ -18,6 +18,7 @@
 #include "config.h"
 #include <stdlib.h>
 #include <stdio.h>
+#include <stdint.h>
 #include <math.h>
 #include <tgmath.h>
 #include "types.h"
@@ -435,7 +436,72 @@ void MATRIXFF(minmax_nodiag)(const MATRIXF* d,FTYPE* restrict dmin,FTYPE* restri
 	}
 }
 
+/* Quick hash of VECTORF using bitwise operation
+ * Return: hash of VECTORF as FTYPE
+ */
+static inline FTYPE VECTORFF(hash)(const VECTORF* v)
+{
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wstrict-aliasing"
+#define	TFUTYPE CONCATENATE3(uint,FTYPEBITS,_t)
+	TFUTYPE	h;
+	size_t	i;
 
+	h=*(const TFUTYPE*)VECTORFF(const_ptr)(v,0);
+	for(i=1;i<v->size;i++)
+	{
+		h=(h<<1)|(h>>(FTYPEBITS-1));
+		h^=*(const TFUTYPE*)VECTORFF(const_ptr)(v,i);
+	}
+	return *(FTYPE*)(&h);
+}
+
+int MATRIXFF(cmprow)(const MATRIXF* m1,const MATRIXF* m2,VECTORF* buff1,VECTORF* buff2,char nodiag,char warn)
+{
+	size_t	i,j;
+	size_t	ng,nt;
+	union	u
+	{
+		FTYPE	f;
+		TFUTYPE	u;
+	} t;
+	FTYPE	fmin,fmax;
+	int	test;
+
+	ng=m1->size1;
+	nt=m2->size1;
+	assert((m2->size2==m1->size2)&&(buff->size1==ng)&&(buff1->size==ng)&&(buff2->size==m1->size2));
+
+	for(i=0;i<ng;i++)
+	{
+		VECTORFF(const_view) vv=MATRIXFF(const_row)(m1,i);
+		VECTORFF(set)(buff1,i,VECTORFF(hash)(&vv.vector));
+	}
+
+	for(i=0;i<nt;i++)
+	{
+		VECTORFF(const_view) vv=MATRIXFF(const_row)(m2,i);
+		t.f=VECTORFF(hash)(&vv.vector);
+		for(j=0;j<ng;j++)
+		{
+			test=nodiag&&(i==j);
+			if(test^(t.u!=*((const TFUTYPE*)VECTORFF(const_ptr)(buff1,j))))
+				continue;
+			VECTORFF(memcpy)(buff2,&vv.vector);
+			VECTORFF(const_view) vv2=MATRIXFF(const_row)(m1,j);
+			VECTORFF(sub)(buff2,&vv2.vector);
+			VECTORFF(minmax)(buff2,&fmin,&fmax);
+			if(test^((fmin!=0)||(fmax!=0)))
+				continue;
+			if(warn)
+				LOG(5,"Detected identical rows in dt and dt2 (at the same or different row numbers), or different rows at the same row number when nodiag is true. Make sure your input data and the nodiag flag are correct.")
+			return 1;
+		}
+	}
+	return 0;
+#undef TFUTYPE
+#pragma GCC diagnostic pop
+}
 
 
 

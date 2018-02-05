@@ -1,4 +1,4 @@
-/* Copyright 2016, 2017 Lingfei Wang
+/* Copyright 2016-2018 Lingfei Wang
  * 
  * This file is part of Findr.
  * 
@@ -19,61 +19,24 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <assert.h>
-#include <sys/time.h>
-#include "../../base/gsl/blas.h"
 #include "../../base/logger.h"
-#include "../../base/macros.h"
-#include "../../base/histogram.h"
+#include "../../base/gsl/histogram.h"
 #include "../nullhist.h"
 #include "nullhist.h"
-#include "nulldist.h"
 
-
-int	pij_gassist_nullhist_analytical1_pdf(const void* param,gsl_histogram* h)
+int pij_gassist_nullhists(gsl_histogram** h[4],size_t nt,size_t ns,size_t nv,const FTYPE dmax[4])
 {
-	const struct pij_gassist_nullhist_analytical_pdf_param	*p=param;
-	const struct pij_gassist_nulldist_mixed_pdf_data		p2={p->g,p->nv};
-	const struct pij_nullhist_analytical_pdf_param			p3={p->nsplit,pij_gassist_nulldist1_mixed_pdf,&p2};
-	
-	return pij_nullhist_analytical_pdf(&p3,h);
-}
+	//Construct null density histograms
+	h[0]=pij_nullhist((double)dmax[0],nv,nt,1,1,1,ns-2);
+	h[1]=pij_nullhist((double)dmax[1],nv,nt,1,1,1,ns-3);
+	h[2]=pij_nullhist((double)dmax[2],nv,nt,1,2,1,ns-3);
+	h[3]=pij_nullhist((double)dmax[3],nv,nt,0,1,1,ns-3);
+	if(h[0]&&h[1]&&h[2]&&h[3])
+		return 0;
 
-int	pij_gassist_nullhist_analytical2_pdf(const void* param,gsl_histogram* h)
-{
-	const struct pij_gassist_nullhist_analytical_pdf_param	*p=param;
-	const struct pij_gassist_nulldist_mixed_pdf_data		p2={p->g,p->nv};
-	const struct pij_nullhist_analytical_pdf_param			p3={p->nsplit,pij_gassist_nulldist2_mixed_pdf,&p2};
-	
-	return pij_nullhist_analytical_pdf(&p3,h);
+	LOG(1,"pij_nullhist failed.")
+	return 1;
 }
-
-int	pij_gassist_nullhist_analytical3_pdf(const void* param,gsl_histogram* h)
-{
-	const struct pij_gassist_nullhist_analytical_pdf_param	*p=param;
-	const struct pij_gassist_nulldist_mixed_pdf_data		p2={p->g,p->nv};
-	const struct pij_nullhist_analytical_pdf_param			p3={p->nsplit,pij_gassist_nulldist3_mixed_pdf,&p2};
-	
-	return pij_nullhist_analytical_pdf(&p3,h);
-}
-
-int	pij_gassist_nullhist_analytical4_pdf(const void* param,gsl_histogram* h)
-{
-	const struct pij_gassist_nullhist_analytical_pdf_param	*p=param;
-	const struct pij_gassist_nulldist_mixed_pdf_data		p2={p->g,p->nv};
-	const struct pij_nullhist_analytical_pdf_param			p3={p->nsplit,pij_gassist_nulldist4_mixed_pdf,&p2};
-	
-	return pij_nullhist_analytical_pdf(&p3,h);
-}
-
-int	pij_gassist_nullhist_analytical5_pdf(const void* param,gsl_histogram* h)
-{
-	const struct pij_gassist_nullhist_analytical_pdf_param	*p=param;
-	const struct pij_gassist_nulldist_mixed_pdf_data		p2={p->g,p->nv};
-	const struct pij_nullhist_analytical_pdf_param			p3={p->nsplit,pij_gassist_nulldist5_mixed_pdf,&p2};
-	
-	return pij_nullhist_analytical_pdf(&p3,h);
-}
-
 
 
 
