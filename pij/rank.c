@@ -125,6 +125,7 @@ int pij_rank_pv(const MATRIXF* t,const MATRIXF* t2,MATRIXF* p,size_t memlimit)
 
 	//Step 1: Supernormalization
 	LOG(9,"Supernormalizing...")
+	LOG(6,"Compatibility: From version 2.x.x, Continuous data will not go through supernormalization by default. A separate function interface will be provided for supernormalization. Simple normalization to zero mean and unit variance will still proceed as before.")
 	MATRIXFF(memcpy)(tnew,t);
 	ret=supernormalizea_byrow(tnew);
 	MATRIXFF(memcpy)(tnew2,t2);
@@ -207,6 +208,7 @@ int pij_rank(const MATRIXF* t,const MATRIXF* t2,MATRIXF* p,char nodiag,size_t me
 
 	//Step 1: Supernormalization
 	LOG(9,"Supernormalizing...")
+	LOG(6,"Compatibility: From version 2.x.x, Continuous data will not go through supernormalization by default. A separate function interface will be provided for supernormalization. Simple normalization to zero mean and unit variance will still proceed as before.")
 	MATRIXFF(memcpy)(tnew,t);
 	ret=supernormalizea_byrow(tnew);
 	MATRIXFF(memcpy)(tnew2,t2);

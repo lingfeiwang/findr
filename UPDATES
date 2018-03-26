@@ -1,3 +1,5 @@
+1.0.7:
+	Added compatibility warning for interface changes in future versions.
 1.0.6:
 	Corrected a bug that may produce biased output in pij_gassist, pij_gassist_trad, and pijs_gassist when nodiag is set or when memlimit is small so computation is split into chunks.
 	Now setting histogram bounds based on the maximum of all LLRs (as opposed to the maximum of the chunk when memlimit is small) in pij_gassist, pij_gassist_trad, and pijs_gassist. This ensures the output is independent of memlimit (related to question from sritchie73@github).

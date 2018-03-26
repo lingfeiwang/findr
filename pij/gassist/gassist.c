@@ -81,6 +81,7 @@ int pijs_gassist_pv(const MATRIXG* g,const MATRIXF* t,const MATRIXF* t2,VECTORF*
 
 	//Step 1: Supernormalization
 	LOG(9,"Supernormalizing...")
+	LOG(6,"Compatibility: From version 2.x.x, Continuous data will not go through supernormalization by default. A separate function interface will be provided for supernormalization. Simple normalization to zero mean and unit variance will still proceed as before.")
 	MATRIXFF(memcpy)(tnew,t);
 	ret=supernormalizea_byrow(tnew);
 	MATRIXFF(memcpy)(tnew2,t2);
@@ -169,6 +170,7 @@ int pijs_gassist(const MATRIXG* g,const MATRIXF* t,const MATRIXF* t2,VECTORF* p1
 
 	//Step 1: Supernormalization
 	LOG(9,"Supernormalizing...")
+	LOG(6,"Compatibility: From version 2.x.x, Continuous data will not go through supernormalization by default. A separate function interface will be provided for supernormalization. Simple normalization to zero mean and unit variance will still proceed as before.")
 	MATRIXFF(memcpy)(tnew,t);
 	ret=supernormalizea_byrow(tnew);
 	MATRIXFF(memcpy)(tnew2,t2);
